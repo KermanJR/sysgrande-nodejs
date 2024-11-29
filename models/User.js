@@ -1,13 +1,14 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const { v4: uuidv4 } = require('uuid'); // Usar UUID para criar IDs únicos
+const { v4: uuidv4 } = require('uuid');
+const Employee = require('./Employeer'); // Importando o modelo de funcionários
 
 const userSchema = new mongoose.Schema({
   id: {
     type: String,
     required: true,
-    unique: true, // Garante que o id seja único
-    default: uuidv4, // Define o UUID como valor padrão para o campo id
+    unique: true,
+    default: uuidv4,
   },
   name: {
     type: String,
@@ -26,11 +27,21 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  codigoEquipe: {
+    type: Number,
+    required: false,
+  },
   role: {
     type: String,
-    enum: ['Supervisor', 'Administrador'], // Tipos de usuário
+    enum: ['Supervisor', 'Administrador', 'Leitor'],
     default: 'Leitor',
   },
+  // Adicionando referência ao funcionário
+  employee: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee', // Referência ao modelo Employee
+    required: false, // Se não for obrigatório
+  }
 }, { timestamps: true });
 
 // Antes de salvar o usuário, criptografar a senha e gerar o ID
@@ -39,9 +50,8 @@ userSchema.pre('save', async function (next) {
     return next();
   }
 
-  // Gerar ID se não existir
   if (!this.id) {
-    this.id = uuidv4(); // Gerar um UUID se o ID não for fornecido
+    this.id = uuidv4();
   }
 
   const salt = await bcrypt.genSalt(10);

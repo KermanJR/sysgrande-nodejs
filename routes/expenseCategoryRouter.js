@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const despesaController = require('../controllers/ExpenseCategoryController');
+const despesaController = require('../controllers/expenseCategoryController');
 
 // Rota para criar tipo de despesa
 router.post('/despesas', despesaController.createDespesa);

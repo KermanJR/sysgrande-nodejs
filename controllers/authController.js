@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const Regional = require('../models/Regional');
+const Employee = require('../models/Employeer'); // Importando o modelo Employee
 require('dotenv').config();
 
 // Função de login
@@ -9,7 +9,7 @@ const login = async (req, res) => {
 
   try {
     // Verificar se o usuário existe
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate('employee'); // Populate para incluir dados do funcionário
     if (!user) {
       return res.status(404).json({ message: 'Usuário não encontrado' });
     }
@@ -19,6 +19,7 @@ const login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: 'Credenciais inválidas' });
     }
+
     // Verificar se o código regional do usuário coincide com o código enviado
     if (user.codigoRegional !== codigoRegional) {
       return res.status(401).json({ message: 'Código regional inválido para o usuário' });
@@ -39,7 +40,8 @@ const login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        codigoRegional: user.codigoRegional, // Retornando o código regional
+        codigoRegional: user.codigoRegional,
+        employee: user.employee, // Dados do funcionário associado
       },
     });
   } catch (error) {
@@ -48,14 +50,13 @@ const login = async (req, res) => {
   }
 };
 
-
 // Função para obter usuário pelo ID
 const getUserById = async (req, res) => {
   const { id } = req.params;
 
   try {
     // Buscar usuário pelo ID personalizado
-    const user = await User.findOne({ id });
+    const user = await User.findOne({ id }).populate('employee'); // Associando o funcionário
     if (!user) {
       return res.status(404).json({ message: 'Usuário não encontrado' });
     }
@@ -68,6 +69,7 @@ const getUserById = async (req, res) => {
         email: user.email,
         role: user.role,
         codigoRegional: user.codigoRegional,
+        employee: user.employee, // Incluindo o funcionário associado
       },
     });
   } catch (error) {
@@ -78,13 +80,19 @@ const getUserById = async (req, res) => {
 
 // Função de registro para cadastrar novos usuários
 const register = async (req, res) => {
-  const { name, email, password, codigoRegional, role } = req.body;
+  const { name, email, password, codigoRegional, role, employeeId } = req.body;
 
   try {
     // Verificar se o email já está em uso
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email já está em uso' });
+    }
+
+    // Verificar se o funcionário existe
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: 'Funcionário não encontrado' });
     }
 
     // Criar um novo usuário
@@ -94,6 +102,7 @@ const register = async (req, res) => {
       password,
       codigoRegional,
       role,
+      employee: employeeId, // Associando o usuário ao funcionário
     });
 
     // Salvar o usuário no banco de dados
@@ -101,7 +110,7 @@ const register = async (req, res) => {
 
     // Criar token JWT
     const token = jwt.sign(
-      { sub: newUser.id, role: newUser.role }, // Usando o id personalizado aqui
+      { sub: newUser.id, role: newUser.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -110,10 +119,11 @@ const register = async (req, res) => {
     res.status(201).json({
       access_token: token,
       user: {
-        id: newUser.id, // Retornar o id personalizado na resposta
+        id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        employee: employee, // Retornando os dados do funcionário
       },
     });
   } catch (error) {

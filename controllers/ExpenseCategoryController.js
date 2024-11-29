@@ -2,12 +2,12 @@ const Despesa = require('../models/ExpenseCategory');
 
 // Função para adicionar um tipo de despesa
 exports.createDespesa = async (req, res) => {
-  const { nome } = req.body;
+  const { name } = req.body;
 
   try {
-    const novaDespesa = new Despesa({ nome });
+    const novaDespesa = new Despesa({ name });
     await novaDespesa.save();
-    res.status(201).json({ id: novaDespesa._id, nome: novaDespesa.nome });
+    res.status(201).json({ id: novaDespesa._id, nome: novaDespesa.name });
   } catch (err) {
     res.status(500).json({ message: 'Erro ao criar tipo de despesa', error: err });
   }

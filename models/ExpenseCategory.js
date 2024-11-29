@@ -8,7 +8,7 @@ const despesaSchema = new mongoose.Schema({
         unique: true,
         default: uuidv4,  // Gera um ID único para a despesa
       },
-  nome: {
+  name: {
     type: String,
     required: true,
   },
