@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema({
     enum: ['Supervisor', 'Administrador', 'Leitor'],
     default: 'Leitor',
   },
+  employee: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
 
 }, { timestamps: true });
 
