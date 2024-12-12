@@ -6,7 +6,6 @@ const itemRoutes = require('./routes/itemRoutes');
 const regionalRoutes = require('./routes/regionalRoutes');
 const authRoutes = require('./routes/authRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
-const expenseCategoryRoutes = require('./routes/expenseCategoryRouter');
 const employeeRoutes = require('./routes/employeeRoutes');
 const municipioRoutes = require('./routes/municipioRoutes');  // Importando as rotas de município
 const localRoutes = require('./routes/localRoutes'); 
@@ -37,7 +36,6 @@ app.use('/api', itemRoutes);
 app.use('/api', regionalRoutes);
 app.use('/api', authRoutes);
 app.use('/api', expenseRoutes);
-app.use('/api', expenseCategoryRoutes)
 app.use('/api', employeeRoutes)
 app.use('/api', municipioRoutes);  // Registrando a rota de municípios
 app.use('/api', localRoutes);  // Registrando a rota de locais

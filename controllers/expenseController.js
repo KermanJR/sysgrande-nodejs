@@ -1,36 +1,65 @@
-// controllers/expenseController.js
 const Expense = require('../models/Expense');
 const upload = require('../config/multer');
+const VacationExpense = require('../models/VacationExpense')
 
 // Adicionar despesa
 exports.addExpense = (req, res) => {
-    // Usando o multer para fazer o upload do arquivo
     upload.single('attachment')(req, res, async (err) => {
         if (err) {
             return res.status(400).json({ message: 'Erro ao fazer upload do arquivo', error: err.message });
         }
 
-        const { type, amount, paymentMethod, eventDate, paymentDate, status, description, company, createdBy } = req.body;
-        const attachment = req.file ? req.file.path : null;  // Se o arquivo foi enviado, armazene o caminho
+        const {
+            type, amount, paymentMethod, paymentDate, status, description,
+            company, createdBy, employee, startDate, endDate,
+            holidayValue, additionalPayments, updateBy
+        } = req.body;
 
-        // Validar se o campo company foi informado
+    
+
+        const attachment = req.file ? req.file.path : null;
+
+
         if (!company) {
             return res.status(400).json({ message: 'O campo "company" é obrigatório' });
         }
 
         try {
-            const newExpense = new Expense({
-                type,
-                createdBy,
-                amount,
-                paymentMethod,
-                eventDate,
-                paymentDate,
-                status,
-                description,
-                attachment,
-                company,  // Campo da empresa
-            });
+            let newExpense;
+
+            if (type == 'Vacation') {
+                newExpense = new VacationExpense({
+                    type,
+                    amount,
+                    paymentMethod,
+                    paymentDate,
+                    status,
+                    description,
+                    attachment,
+                    company,
+                    createdBy,
+                    employee,
+                    startDate,
+                    endDate,
+                    holidayValue,
+                    additionalPayments,
+                    updateBy
+                });
+            } else {
+                newExpense = new Expense({
+                    type,
+                    amount,
+                    paymentMethod,
+                    paymentDate,
+                    status,
+                    description,
+                    attachment,
+                    company,
+                    createdBy,
+                    employee,
+                    updateBy
+                });
+            }
 
             await newExpense.save();
             res.status(201).json(newExpense);
@@ -42,17 +71,18 @@ exports.addExpense = (req, res) => {
 
 // Listar todas as despesas
 exports.getExpenses = async (req, res) => {
-    const { company } = req.query;  // A empresa pode vir via query string
+    const { company } = req.query;
 
     if (!company) {
         return res.status(400).json({ message: 'O campo "company" é obrigatório na consulta' });
     }
 
     try {
-        const expenses = await Expense.find({ company }); // Filtrar despesas pela empresa
-        
-        //const expenses = await Expense.find();
-        // Gerar a URL completa para o campo `attachment`
+        // Popular tanto 'employee' quanto 'createdBy'
+        const expenses = await Expense.find({ company })
+            .populate('employee')          // Popula os dados do 'employee'
+            .populate('user');        // Popula os dados de 'createdBy'
+
         const expensesWithAttachmentUrls = expenses.map((expense) => {
             if (expense.attachment) {
                 expense.attachment = `${req.protocol}://${req.get('host')}/${expense.attachment.replace(/\\/g, '/')}`;
@@ -66,44 +96,74 @@ exports.getExpenses = async (req, res) => {
     }
 };
 
-// Atualizar uma despesa existente
+
+// Atualizar despesa com suporte a FormData e arquivo
 exports.updateExpense = async (req, res) => {
     const { id } = req.params;
-    const { description, amount, date, category, company } = req.body;
 
-    // Não deve ser possível mudar a empresa de uma despesa, então você pode validar isso
-    if (company) {
-        return res.status(400).json({ message: 'Não é possível alterar a empresa de uma despesa' });
-    }
-
-    try {
-        const updatedExpense = await Expense.findOneAndUpdate(
-            { id },
-            { description, amount, date, category },
-            { new: true }
-        );
-
-        if (!updatedExpense) {
-            return res.status(404).json({ message: 'Despesa não encontrada' });
+    // Processa o upload do arquivo com multer
+    upload.single('attachment')(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ message: 'Erro ao fazer upload do arquivo', error: err.message });
         }
 
-        res.status(200).json(updatedExpense);
-    } catch (error) {
-        res.status(500).json({ message: 'Erro ao atualizar despesa', error });
-    }
+        // Dados recebidos no corpo da requisição
+        const { type, amount, paymentMethod, paymentDate, status, description, 
+                company, createdBy, employee, startDate, endDate, 
+                holidayValue, additionalPayments, updateBy } = req.body;
+
+        const attachment = req.file ? req.file.path : null; // Se houver um arquivo, usa o caminho
+
+        try {
+            // Busca a despesa existente
+            const expense = await Expense.findOne({ id: id }).populate("employee");
+            if (!expense) {
+                return res.status(404).json({ message: "Despesa não encontrada" });
+            }
+
+            // Atualiza os campos da despesa com os novos valores
+            expense.type = type;
+            expense.amount = amount;
+            expense.paymentMethod = paymentMethod;
+            expense.paymentDate = paymentDate;
+            expense.status = status;
+            expense.description = description;
+            expense.company = company;
+            expense.createdBy = createdBy;
+            expense.employee = employee;
+            expense.startDate = startDate;
+            expense.endDate = endDate;
+            expense.holidayValue = holidayValue;
+            expense.additionalPayments = additionalPayments;
+            expense.updateBy = updateBy;
+
+            // Atualiza o campo 'updatedAt' para a data e hora atuais
+            expense.updatedAt = Date.now();
+
+            // Se houver um novo arquivo, atualiza o campo 'attachment'
+            if (attachment) {
+                expense.attachment = attachment;
+            }
+
+            // Salva as mudanças no banco de dados
+            await expense.save();
+
+            // Retorna a despesa atualizada
+            res.status(200).json(expense);
+        } catch (error) {
+            console.error('Erro ao atualizar despesa:', error);
+            res.status(500).json({ message: 'Erro ao atualizar despesa', error });
+        }
+    });
 };
 
-// Deletar uma despesa
+
+// Deletar despesa
 exports.deleteExpense = async (req, res) => {
     const { id } = req.params;
-    const { company } = req.query; // Empresa deve vir via query para garantir que a empresa é válida
-
-    if (!company) {
-        return res.status(400).json({ message: 'O campo "company" é obrigatório para exclusão' });
-    }
 
     try {
-        const deletedExpense = await Expense.findOneAndDelete({ id, company }); // Filtrar pela empresa
+        const deletedExpense = await Expense.findOneAndDelete({ id: id });
 
         if (!deletedExpense) {
             return res.status(404).json({ message: 'Despesa não encontrada ou não pertence à empresa especificada' });

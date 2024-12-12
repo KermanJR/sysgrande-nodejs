@@ -34,29 +34,30 @@ exports.createEmployee = async (req, res) => {
   };
 
 
-exports.getAllEmployees = async (req, res) => {
-  const { company } = req.query;
-
-  try {
-    if (!company) {
-      return res.status(400).json({ message: 'A "company" é um parâmetro obrigatório' });
+  exports.getAllEmployees = async (req, res) => {
+    const { company } = req.query;
+  
+    try {
+      if (!company) {
+        return res.status(400).json({ message: 'A "company" é um parâmetro obrigatório' });
+      }
+  
+      // Buscar os funcionários com base na company e popular as referências
+      const employees = await Employee.find({ company })
+        .populate('codigoRegional')   // Popular a referência da Regional
+        .populate('codigoMunicipio')  // Popular a referência do Município
+        .populate('codigoLocal')      // Popular a referência do Local
+  
+      if (employees.length === 0) {
+        return res.status(404).json({ message: 'Nenhum funcionário encontrado para a empresa fornecida' });
+      }
+  
+      return res.status(200).json(employees);
+    } catch (error) {
+      return res.status(500).json({ message: 'Erro ao obter funcionários', error });
     }
-
-    // Buscar os funcionários com base na company e popular as referências
-    const employees = await Employee.find({ company })
-      .populate('codigoRegional')  // Popular a referência da Regional
-      .populate('codigoMunicipio') // Popular a referência do Município
-      .populate('codigoLocal');    // Popular a referência do Local
-
-    if (employees.length === 0) {
-      return res.status(404).json({ message: 'Nenhum funcionário encontrado para a empresa fornecida' });
-    }
-
-    return res.status(200).json(employees);
-  } catch (error) {
-    return res.status(500).json({ message: 'Erro ao obter funcionários', error });
-  }
-};
+  };
+  
 
 
 // Consultar Funcionário pelo ID com detalhes das referências

@@ -9,7 +9,7 @@ const login = async (req, res) => {
 
   try {
     // Verificar se o usuário existe
-    const user = await User.findOne({ email }).populate('employee'); // Populate para incluir dados do funcionário
+    const user = await User.findOne({ email }) // Populate para incluir dados do funcionário
     if (!user) {
       return res.status(404).json({ message: 'Usuário não encontrado' });
     }
@@ -21,9 +21,9 @@ const login = async (req, res) => {
     }
 
     // Verificar se o código regional do usuário coincide com o código enviado
-    if (user.codigoRegional !== codigoRegional) {
+    /*if (user.codigoRegional !== codigoRegional) {
       return res.status(401).json({ message: 'Código regional inválido para o usuário' });
-    }
+    }*/
 
     // Criar token JWT
     const token = jwt.sign(

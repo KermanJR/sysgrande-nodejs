@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
-const Employee = require('./Employeer'); // Importando o modelo de funcionários
 
 const userSchema = new mongoose.Schema({
   id: {
@@ -23,25 +22,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  codigoRegional: {
-    type: Number,
-    required: true,
-  },
-  codigoEquipe: {
-    type: Number,
-    required: false,
-  },
   role: {
     type: String,
     enum: ['Supervisor', 'Administrador', 'Leitor'],
     default: 'Leitor',
   },
-  // Adicionando referência ao funcionário
-  employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee', // Referência ao modelo Employee
-    required: false, // Se não for obrigatório
-  }
+
 }, { timestamps: true });
 
 // Antes de salvar o usuário, criptografar a senha e gerar o ID
