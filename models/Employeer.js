@@ -26,7 +26,7 @@ const employeeSchema = new mongoose.Schema({
   company: {
     type: String,
     required: true,
-    enum: ['Sanegrande', 'Enterhome'], // Limita os valores possíveis para evitar erros
+    enum: ['Sanegrande', 'Enter Home'], // Limita os valores possíveis para evitar erros
 },
 codigoLocal: {
     type: mongoose.Schema.Types.ObjectId,

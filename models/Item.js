@@ -19,7 +19,12 @@ const itemSchema = new mongoose.Schema({
   location: { type: String, required: false },  // Localização (e.g., Matriz, Funcionário)
   regionalCode: { type: Number, required: true },  // Código da regional (e.g., 22 para Três Lagoas)
   observations: { type: String },  // Observações adicionais (opcional)
-  createdAt: { type: Date, default: Date.now }  // Data de criação do item
+  createdAt: { type: Date, default: Date.now },  // Data de criação do item
+  company: {
+    type: String,
+    required: true,
+    enum: ['Sanegrande', 'Enter Home'], // Limita os valores possíveis para evitar erros
+},
 });
 
 module.exports = mongoose.model('Item', itemSchema);
