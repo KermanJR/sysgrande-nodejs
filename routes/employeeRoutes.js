@@ -11,6 +11,9 @@ router.get('/employees', employeeController.getAllEmployees);
 // Consultar um funcionário por ID
 router.get('/employees/:id', employeeController.getEmployeeById);
 
+// Rota para atualizar um funcionário 
+router.patch('/employees/:id', employeeController.updateEmployee);
+
 // Rota para deletar um funcionário (soft delete)
 router.delete('/employees/:id', employeeController.deleteEmployee);
 

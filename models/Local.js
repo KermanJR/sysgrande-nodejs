@@ -2,12 +2,12 @@ const mongoose = require('mongoose');
 const Municipio = require('./Municipio'); // Importa o modelo de Município
 
 const LocalSchema = new mongoose.Schema({
-  codigo: { 
+  localCode: { 
     type: Number, 
     required: true, 
     unique: true 
   },
-  nome: { 
+  name: { 
     type: String, 
     required: true 
   },

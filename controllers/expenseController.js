@@ -40,6 +40,10 @@ exports.addExpense = (req, res) => {
       paymentDeadline,
       terminationDate,
       reason,
+      statusASO,
+      statusPaymentTermination,
+      statusSendWarning,
+      paymentDeadlineTermination,
     } = req.body;
 
     const attachment = req.file ? req.file.path : null;
@@ -98,6 +102,10 @@ exports.addExpense = (req, res) => {
           paymentDeadline,
           terminationDate,
           reason,
+          statusASO,
+          statusPaymentTermination,
+          statusSendWarning,
+          paymentDeadlineTermination,
         });
       }
 
@@ -120,17 +128,26 @@ exports.getExpenses = async (req, res) => {
   }
 
   try {
-    // Popular tanto 'employee' quanto 'createdBy'
+    // Popular os dados de 'employee', incluindo as referências de 'codigoRegional', 'codigoMunicipio', 'codigoLocal'
     const expenses = await Expense.find({ company })
-      .populate("employee") // Popula os dados do 'employee'
-      .populate("user"); // Popula os dados de 'createdBy'
+      .populate({
+        path: 'employee',
+        populate: [
+          { path: 'codigoRegional', select: 'codigo nome' }, // Popula 'codigoRegional' com 'codigo' e 'name'
+          { path: 'codigoMunicipio', select: 'codigo nome' }, // Popula 'codigoMunicipio' com 'codigo' e 'name'
+          { path: 'codigoLocal', select: 'codigo nome' }, // Popula 'codigoLocal' com 'codigo' e 'name'
+        ]
+      })
+      .exec();
 
+    // Adicionar URLs dos anexos (se houver)
     const expensesWithAttachmentUrls = expenses.map((expense) => {
       if (expense.attachment) {
         expense.attachment = `${req.protocol}://${req.get(
           "host"
         )}/${expense.attachment.replace(/\\/g, "/")}`;
       }
+
       return expense;
     });
 
@@ -139,6 +156,8 @@ exports.getExpenses = async (req, res) => {
     res.status(500).json({ message: "Erro ao listar despesas", error });
   }
 };
+
+
 
 // Atualizar despesa com suporte a FormData e arquivo
 exports.updateExpense = async (req, res) => {

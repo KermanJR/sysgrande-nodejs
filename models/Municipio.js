@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const MunicipioSchema = new mongoose.Schema({
-  nome: {
+  name: {
     type: String,
     required: true
   },
-  codigo: {
+  municipioCode: {
     type: Number,
     unique: true,
     required: true

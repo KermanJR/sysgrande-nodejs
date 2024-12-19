@@ -14,7 +14,7 @@ const expenseBaseSchema = new Schema(
       unique: true,
       default: require("uuid").v4,
     },
-    amount: { type: Number, required: true },
+    amount: { type: Number, required: false },
     paymentMethod: { type: String, required: false },
     paymentDate: { type: Date, required: false },
     status: {
@@ -27,7 +27,6 @@ const expenseBaseSchema = new Schema(
     company: { type: String, required: true },
     createdAt: { type: Date, default: () => new Date() },
     updatedAt: { type: Date, default: () => new Date() },
-
     attachment: { type: String, required: false },
     createdBy: { type: String, required: true }, // Referência ao usuário que criou
     updateBy: { type: String, required: true },
