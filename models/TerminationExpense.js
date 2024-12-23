@@ -23,8 +23,8 @@ const terminationExpenseSchema = new mongoose.Schema({
   statusSendWarning: { type: String, required: true },
   statusASO: { type: String, required: true },
   statusPaymentTermination: { type: String, required: true },
-  
-  
+  placaMoto: { type: String, required: true },
+  placaCarro: { type: String, required: false },
 });
 
 const TerminationExpense = Expense.discriminator('Termination', terminationExpenseSchema);

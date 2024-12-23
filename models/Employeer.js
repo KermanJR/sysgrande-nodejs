@@ -45,7 +45,7 @@ const employeeSchema = new mongoose.Schema(
     },
     codigoEquipe: {
       type: Number,
-      required: true,
+      required: false,
     },
     deletedAt: {
       type: Date, // Campo para armazenar a data de exclusão

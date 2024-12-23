@@ -16,7 +16,7 @@ router.delete('/expenses/:id', deleteExpense);
 
 // Rotas específicas
 router.post('/expenses/vacation', addExpense);
-router.put('/expenses/vacation/:id', updateExpense);
+router.patch('/expenses/vacation/:id', updateExpense);
 router.post('/expenses/fixed', addExpense);
 
 module.exports = router;

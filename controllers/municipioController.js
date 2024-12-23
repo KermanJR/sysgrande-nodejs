@@ -3,11 +3,11 @@ const Municipio = require('../models/Municipio');
 // Criar um novo Município
 exports.createMunicipio = async (req, res) => {
   try {
-    const { codigo, nome, codigoRegional } = req.body;
+    const { municipioCode, name, codigoRegional } = req.body;
 
     const newMunicipio = new Municipio({
-      codigo,
-      nome,
+      municipioCode,
+      name,
       codigoRegional,  // Referência à Regional
     });
 

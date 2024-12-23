@@ -5,7 +5,16 @@ const Local = require('../models/Local');  // Modelo de Local
 
 exports.createEmployee = async (req, res) => {
     try {
-      const { name, codigoRegional, codigoMunicipio, company, codigoLocal, codigoEquipe } = req.body;
+      const { name, 
+        codigoRegional, 
+        codigoMunicipio, 
+        company, 
+        codigoLocal,
+        status,
+        position,
+        department, 
+        codigoEquipe 
+      } = req.body;
   
       // Verifica se os dados necessários existem
       const regional = await Regional.findById(codigoRegional);
@@ -23,6 +32,9 @@ exports.createEmployee = async (req, res) => {
         company,
         codigoEquipe,
         codigoLocal,
+        status,
+        position,
+        department, 
         local: local._id
       });
   
@@ -37,7 +49,9 @@ exports.createEmployee = async (req, res) => {
 exports.updateEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, name, codigoRegional, codigoMunicipio, company, codigoLocal, codigoEquipe } = req.body;
+    const {status,
+      position,
+      department, name, codigoRegional, codigoMunicipio, company, codigoLocal, codigoEquipe } = req.body;
 
     // Buscar o funcionário pelo ID
     const employee = await Employee.findById(id);

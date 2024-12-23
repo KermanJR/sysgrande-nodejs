@@ -44,6 +44,7 @@ exports.addExpense = (req, res) => {
       statusPaymentTermination,
       statusSendWarning,
       paymentDeadlineTermination,
+      placaMoto
     } = req.body;
 
     const attachment = req.file ? req.file.path : null;
@@ -74,6 +75,7 @@ exports.addExpense = (req, res) => {
           holidayValue,
           additionalPayments,
           updateBy,
+          placaMoto
         });
       }
       if (type == "Termination") {
@@ -106,6 +108,7 @@ exports.addExpense = (req, res) => {
           statusPaymentTermination,
           statusSendWarning,
           paymentDeadlineTermination,
+          placaMoto
         });
       }
 
@@ -133,9 +136,9 @@ exports.getExpenses = async (req, res) => {
       .populate({
         path: 'employee',
         populate: [
-          { path: 'codigoRegional', select: 'codigo nome' }, // Popula 'codigoRegional' com 'codigo' e 'name'
-          { path: 'codigoMunicipio', select: 'codigo nome' }, // Popula 'codigoMunicipio' com 'codigo' e 'name'
-          { path: 'codigoLocal', select: 'codigo nome' }, // Popula 'codigoLocal' com 'codigo' e 'name'
+          { path: 'codigoRegional', select: 'codigo name' }, // Popula 'codigoRegional' com 'codigo' e 'name'
+          { path: 'codigoMunicipio', select: 'codigo name' }, // Popula 'codigoMunicipio' com 'codigo' e 'name'
+          { path: 'codigoLocal', select: 'codigo name' }, // Popula 'codigoLocal' com 'codigo' e 'name'
         ]
       })
       .exec();
@@ -174,20 +177,34 @@ exports.updateExpense = async (req, res) => {
 
     // Dados recebidos no corpo da requisição
     const {
-      type,
       amount,
-      paymentMethod,
-      paymentDate,
-      status,
-      description,
-      company,
-      createdBy,
-      employee,
-      startDate,
-      endDate,
-      holidayValue,
-      additionalPayments,
-      updateBy,
+          type,
+          paymentMethod,
+          paymentDate,
+          status,
+          description,
+          company,
+          createdBy,
+          employee,
+          additionalPayments,
+          updateBy,
+          severancePay,
+          noticePeriod,
+          remainingVacations,
+          FGTSbalance,
+          INSSdeduction,
+          incomeTaxDeduction,
+          fineFGTS,
+          otherDeductions,
+          totalAmount,
+          paymentDeadline,
+          terminationDate,
+          reason,
+          statusASO,
+          statusPaymentTermination,
+          statusSendWarning,
+          paymentDeadlineTermination,
+          placaMoto
     } = req.body;
 
     const attachment = req.file ? req.file.path : null; // Se houver um arquivo, usa o caminho
@@ -201,19 +218,18 @@ exports.updateExpense = async (req, res) => {
 
       // Atualiza os campos da despesa com os novos valores
       expense.type = type;
-      expense.amount = amount;
-      expense.paymentMethod = paymentMethod;
-      expense.paymentDate = paymentDate;
+      expense.paymentDeadlineTermination = paymentDeadlineTermination;
+      expense.reason = reason;
       expense.status = status;
-      expense.description = description;
+      expense.statusASO = statusASO;
       expense.company = company;
       expense.createdBy = createdBy;
       expense.employee = employee;
-      expense.startDate = startDate;
-      expense.endDate = endDate;
-      expense.holidayValue = holidayValue;
-      expense.additionalPayments = additionalPayments;
+      expense.statusPaymentTermination = statusPaymentTermination;
+      expense.statusSendWarning = statusSendWarning;
       expense.updateBy = updateBy;
+      expense.terminationDate = terminationDate;
+      expense.placaMoto = placaMoto;
 
       // Se houver um novo arquivo, atualiza o campo 'attachment'
       if (attachment) {

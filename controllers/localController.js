@@ -3,11 +3,11 @@ const Local = require('../models/Local');
 // Criar um novo Local
 exports.createLocal = async (req, res) => {
   try {
-    const { codigo, nome, codigoMunicipio } = req.body;
+    const { localCode, name, codigoMunicipio } = req.body;
 
     const newLocal = new Local({
-      codigo,
-      nome,
+      localCode,
+      name,
       codigoMunicipio,  // Referência ao Município
     });
 
