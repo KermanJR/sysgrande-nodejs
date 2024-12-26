@@ -13,6 +13,14 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       required: true, // Nome do funcionário
     },
+    surname: {
+      type: String,
+      required: true, // Nome do funcionário
+    },
+    phone: {
+      type: String,
+      required: true, // Nome do funcionário
+    },
     position: {
       type: String,
       required: true, // Nome do funcionário
@@ -44,7 +52,7 @@ const employeeSchema = new mongoose.Schema(
       required: true,
     },
     codigoEquipe: {
-      type: Number,
+      type: String,
       required: false,
     },
     deletedAt: {
@@ -52,6 +60,18 @@ const employeeSchema = new mongoose.Schema(
       default: null,
     },
     department: {
+      type: String,
+      required: true, // Nome do departamento do funcionário
+    },
+    placaMoto: {
+      type: String,
+      required: true, // Nome do departamento do funcionário
+    },
+    placaCarro: {
+      type: String,
+      required: false, // Nome do departamento do funcionário
+    },
+    cnh: {
       type: String,
       required: true, // Nome do departamento do funcionário
     },
