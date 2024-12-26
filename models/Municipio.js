@@ -7,7 +7,6 @@ const MunicipioSchema = new mongoose.Schema({
   },
   municipioCode: {
     type: Number,
-    unique: true,
     required: true
   },
   codigoRegional: {

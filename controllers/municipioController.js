@@ -1,20 +1,42 @@
 const Municipio = require('../models/Municipio');
 
-// Criar um novo Município
 exports.createMunicipio = async (req, res) => {
   try {
+    // Validação dos dados de entrada
     const { municipioCode, name, codigoRegional } = req.body;
+    
+    if (!municipioCode || !name || !codigoRegional) {
+      return res.status(400).json({ 
+        message: 'Todos os campos são obrigatórios: municipioCode, name, codigoRegional' 
+      });
+    }
+
+    // Verifica se o município já existe
+    const municipioExistente = await Municipio.findOne({ municipioCode });
+    if (municipioExistente) {
+      return res.status(409).json({ 
+        message: 'Já existe um município com este código' 
+      });
+    }
 
     const newMunicipio = new Municipio({
       municipioCode,
       name,
-      codigoRegional,  // Referência à Regional
+      codigoRegional
     });
 
     await newMunicipio.save();
-    return res.status(201).json(newMunicipio); // Retorna o município criado
+    return res.status(201).json(newMunicipio);
+    
   } catch (error) {
-    return res.status(500).json({ message: 'Erro ao criar município', error });
+    console.error('Erro ao criar município:', error);
+    return res.status(500).json({ 
+      message: 'Erro ao criar município',
+      error: {
+        code: error.code,
+        message: error.message
+      }
+    });
   }
 };
 

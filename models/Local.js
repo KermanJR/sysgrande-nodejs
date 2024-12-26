@@ -5,7 +5,6 @@ const LocalSchema = new mongoose.Schema({
   localCode: { 
     type: Number, 
     required: true, 
-    unique: true 
   },
   name: { 
     type: String, 
@@ -18,5 +17,5 @@ const LocalSchema = new mongoose.Schema({
   }
 });
 
-const Local = mongoose.model('Local', LocalSchema);
-module.exports = Local;
+module.exports = mongoose.model('Local', LocalSchema);
+
