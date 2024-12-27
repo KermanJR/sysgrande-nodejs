@@ -11,7 +11,11 @@ router.get('/tasks', taskController.getAllTasks);
 router.get('/tasks/:id', taskController.getTaskById);
 
 // Rota para editar uma tarefa
-router.put('/tasks/:id', taskController.updateTask);
+router.patch('/tasks/:id', taskController.updateTask);
+
+
+// Rota para editar o status de uma tarefa
+router.patch('/tasks/:id/status', taskController.updateStatusTask);
 
 // Rota para deletar uma tarefa
 router.delete('/tasks/:id', taskController.deleteTask);
