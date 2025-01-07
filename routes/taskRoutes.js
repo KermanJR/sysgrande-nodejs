@@ -20,4 +20,7 @@ router.patch('/tasks/:id/status', taskController.updateStatusTask);
 // Rota para deletar uma tarefa
 router.delete('/tasks/:id', taskController.deleteTask);
 
+//Atribuir tarefa a usuário
+router.post('/tasks/:taskId/assign', taskController.assignUserToTask);
+
 module.exports = router;

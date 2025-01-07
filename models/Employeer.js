@@ -1,5 +1,36 @@
 const mongoose = require("mongoose");
-const { v4: uuidv4 } = require("uuid"); // Para gerar IDs únicos
+const { v4: uuidv4 } = require("uuid");
+
+const addressSchema = new mongoose.Schema({
+  street: {
+    type: String,
+    required: true,
+  },
+  number: {
+    type: String,
+    required: true,
+  },
+  complement: {
+    type: String,
+    required: false,
+  },
+  neighborhood: {
+    type: String,
+    required: true,
+  },
+  city: {
+    type: String,
+    required: false,
+  },
+  state: {
+    type: String,
+    required: false,
+  },
+  zipCode: {
+    type: String,
+    required: true,
+  }
+});
 
 const employeeSchema = new mongoose.Schema(
   {
@@ -7,23 +38,33 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      default: uuidv4, // Gerar um UUID único para cada funcionário
+      default: uuidv4,
     },
     name: {
       type: String,
-      required: true, // Nome do funcionário
+      required: true,
     },
-    surname: {
+    cpf: {
       type: String,
-      required: true, // Nome do funcionário
+      required: true,
+      unique: false,
     },
+    rg: {
+      type: String,
+      required: false,
+    },
+    
     phone: {
       type: String,
-      required: true, // Nome do funcionário
+      required: false,
     },
     position: {
       type: String,
-      required: true, // Nome do funcionário
+      required: true,
+    },
+    address: {
+      type: addressSchema,
+      required: true,
     },
     status: {
       type: String,
@@ -32,19 +73,18 @@ const employeeSchema = new mongoose.Schema(
     },
     codigoRegional: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Regional", // Referência para o modelo Regional
+      ref: "Regional",
       required: true,
     },
     codigoMunicipio: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Municipio", // Referência para o modelo Equipe
+      ref: "Municipio",
       required: true,
     },
-
     company: {
       type: String,
       required: true,
-      enum: ["Sanegrande", "Enter Home"], // Limita os valores possíveis para evitar erros
+      enum: ["Sanegrande", "Enter Home"],
     },
     codigoLocal: {
       type: mongoose.Schema.Types.ObjectId,
@@ -56,43 +96,63 @@ const employeeSchema = new mongoose.Schema(
       required: false,
     },
     deletedAt: {
-      type: Date, // Campo para armazenar a data de exclusão
+      type: Date,
       default: null,
     },
     department: {
       type: String,
-      required: true, // Nome do departamento do funcionário
+      required: true,
     },
     placaMoto: {
       type: String,
-      required: true, // Nome do departamento do funcionário
+      required: true,
+    },
+    birthDate:{
+      type: Date,
+      required: true,
+    },
+    admissionDate:{
+      type: Date,
+      required: true
+    },
+    vehicleYear: {
+      type: String,
+      required: false,
+    },
+    vehicleModel: {
+      type: String,
+      required: false,
     },
     placaCarro: {
       type: String,
-      required: false, // Nome do departamento do funcionário
+      required: false,
     },
     cnh: {
       type: String,
-      required: true, // Nome do departamento do funcionário
+      required: false,
+    },
+    cnhValidity: {
+      type: Date,
+      required: false,
     },
     rankings: [
       {
         mes: {
-          type: String, // Mês da avaliação (ex: "Janeiro", "Fevereiro")
+          type: String,
           required: true,
         },
         ano: {
-          type: Number, // Ano da avaliação
+          type: Number,
           required: true,
         },
         nota: {
-          type: Number, // Nota atribuída
+          type: Number,
           required: true,
           min: 0,
-          max: 10, // Limita as notas entre 0 e 10
+          max: 10,
         },
         observacao: {
-          type: String, // Comentários adicionais
+          type: String,
           default: "",
         },
       },
@@ -101,18 +161,11 @@ const employeeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Você pode adicionar métodos no schema conforme necessário, como uma função de busca
 employeeSchema.methods.getEmployeeInfo = function () {
   return `${this.name} - Regional: ${this.codigoRegional}, Equipe: ${this.codigoEquipe}`;
 };
 
-// Método para adicionar uma avaliação ao histórico
-employeeSchema.methods.addAvaliacao = function (
-  mes,
-  ano,
-  nota,
-  observacao = ""
-) {
+employeeSchema.methods.addAvaliacao = function (mes, ano, nota, observacao = "") {
   this.avaliacoes.push({ mes, ano, nota, observacao });
   return this.save();
 };

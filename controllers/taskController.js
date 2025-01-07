@@ -1,4 +1,6 @@
 const Task = require('../models/Task');
+const User = require('../models/User');
+const { sendAssignmentEmail } = require('../services/emailService');
 
 // Criar uma nova tarefa
 exports.createTask = async (req, res) => {
@@ -32,11 +34,13 @@ exports.createTask = async (req, res) => {
 };
 
 
-// Listar todas as tarefas com os dados do usuário que criou a tarefa
 exports.getAllTasks = async (req, res) => {
   try {
-    // Popula o campo 'createdBy' com os dados do usuário (ex.: nome e email)
-    const tasks = await Task.find().populate('createdBy');
+    const tasks = await Task.find()
+      .populate('createdBy', 'name email')
+      .populate('assignedTo', 'name email')
+      .populate('history.user', 'name email')
+      .populate('history.details.assignedUser', 'name email'); // Inclui o assignedUser no histórico
 
     res.status(200).json(tasks);
   } catch (error) {
@@ -44,12 +48,13 @@ exports.getAllTasks = async (req, res) => {
   }
 };
 
+
   
   // Listar tarefa por ID
   exports.getTaskById = async (req, res) => {
     try {
       const { id } = req.params;
-      const task = await Task.findById(id).populate('createdBy', 'name');
+      const task = await Task.findById(id).populate('createdBy', 'name', 'history');
   
       if (!task) {
         return res.status(404).json({ message: 'Tarefa não encontrada' });
@@ -141,3 +146,84 @@ exports.getAllTasks = async (req, res) => {
       res.status(500).json({ message: 'Erro ao deletar a tarefa', error });
     }
   };
+
+  // Nova função para atribuir usuário à tarefa
+exports.assignUserToTask = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { userId, currentUser } = req.body;
+
+    // Busca a tarefa e o usuário
+    const task = await Task.findById(taskId);
+    const user = await User.findById(userId);
+
+    console.log(taskId)
+
+    if (!task || !user) {
+      return res.status(404).json({ 
+        message: 'Tarefa ou usuário não encontrado' 
+      });
+    }
+
+    // Verifica se o usuário já está atribuído
+    const isUserAlreadyAssigned = task.assignedTo.some(
+      id => id.toString() === userId
+    );
+
+    if (isUserAlreadyAssigned) {
+      // Remove o usuário se já estiver atribuído
+      task.assignedTo = task.assignedTo.filter(
+        id => id.toString() !== userId
+      );
+      
+      task.history.push({
+        user: currentUser,
+        event: 'User Unassigned',
+        details: { 
+          unassignedUser: userId,
+          timestamp: new Date()
+        }
+      });
+
+      await task.save();
+
+      return res.status(200).json({
+        message: 'Usuário removido da tarefa com sucesso',
+        task
+      });
+    }
+
+    // Adiciona o usuário à tarefa
+    task.assignedTo.push(userId);
+
+    // Registra no histórico
+    task.history.push({
+      user: currentUser,
+      event: 'User Assigned',
+      details: {
+        assignedUser: userId,
+        timestamp: new Date()
+      }
+    });
+
+    // Salva as alterações
+    await task.save();
+
+    // Envia email para o usuário
+    const emailSent = await sendAssignmentEmail(user, task);
+
+    res.status(200).json({
+      message: 'Usuário atribuído com sucesso',
+      emailSent,
+      task
+    });
+
+  } catch (error) {
+    console.error('Erro ao atribuir usuário:', error);
+    res.status(500).json({
+      message: 'Erro ao atribuir usuário à tarefa',
+      error: error.message
+    });
+  }
+};
+

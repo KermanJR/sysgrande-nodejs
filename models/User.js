@@ -6,8 +6,8 @@ const userSchema = new mongoose.Schema({
   id: {
     type: String,
     required: true,
-    unique: true,
-    default: uuidv4,
+    unique: true, // Garante que o id seja único
+    default: uuidv4, // Define o UUID como valor padrão para o campo id
   },
   name: {
     type: String,
@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
     enum: ['Supervisor', 'Administrador', 'Leitor'],
     default: 'Leitor',
   },
-  employee: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+  employee: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: false},
 
 }, { timestamps: true });
 

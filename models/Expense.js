@@ -28,8 +28,29 @@ const expenseBaseSchema = new Schema(
     createdAt: { type: Date, default: () => new Date() },
     updatedAt: { type: Date, default: () => new Date() },
     attachment: { type: String, required: false },
-    createdBy: { type: String, required: true }, // Referência ao usuário que criou
-    updateBy: { type: String, required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Referência ao usuário que criou
+    updateBy: { type: Schema.Types.ObjectId, ref: "User", required: false },
+    history: [{
+      action: { 
+        type: String, 
+        required: true,
+        enum: ['created', 'updated']
+      },
+      user: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      changes: [{
+        field: String,
+        oldValue: Schema.Types.Mixed,
+        newValue: Schema.Types.Mixed
+      }],
+      timestamp: {
+        type: Date,
+        default: Date.now
+      }
+    }]
   },
   expenseBaseOptions
 );

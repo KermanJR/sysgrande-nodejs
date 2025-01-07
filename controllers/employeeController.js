@@ -5,7 +5,8 @@ const Local = require('../models/Local');  // Modelo de Local
 
 exports.createEmployee = async (req, res) => {
   try {
-    const { name,
+    const {
+      name,
       codigoRegional,
       codigoMunicipio,
       company,
@@ -15,12 +16,19 @@ exports.createEmployee = async (req, res) => {
       department,
       codigoEquipe,
       placaMoto,
-      surname,
       phone,
-      cnh
+      cnh,
+      cpf,
+      rg,
+      cnhValidity,
+      address,
+      admissionDate,
+      birthDate,
+      vehicleModel,
+      vehicleYear
     } = req.body;
 
-    // Verifica se os dados necessários existem
+    // Verify if required data exists
     const regional = await Regional.findById(codigoRegional);
     const municipio = await Municipio.findById(codigoMunicipio);
     const local = await Local.findById(codigoLocal);
@@ -29,45 +37,108 @@ exports.createEmployee = async (req, res) => {
       return res.status(400).json({ message: 'Dados de regional, equipe ou local inválidos' });
     }
 
+    // Check if CPF already exists
+    const existingEmployee = await Employee.findOne({ cpf });
+    if (existingEmployee) {
+      return res.status(400).json({ message: 'CPF já cadastrado no sistema' });
+    }
+
+    // Validate CNH validity date
+    if (new Date(cnhValidity) < new Date()) {
+      return res.status(400).json({ message: 'Data de validade da CNH inválida' });
+    }
+
+    // Validate required address fields
+    if (!address || !address.street || !address.number || !address.neighborhood || 
+        !address.zipCode) {
+      return res.status(400).json({ message: 'Dados de endereço incompletos' });
+    }
+
     const newEmployee = new Employee({
       name,
       codigoRegional: regional._id,
       codigoMunicipio: municipio._id,
       company,
       codigoEquipe,
-      codigoLocal,
+      codigoLocal: local._id,
       status,
       position,
       department,
       placaMoto,
-      surname,
+      admissionDate,
+      birthDate,
       phone,
       cnh,
-      local: local._id
+      vehicleModel,
+      vehicleYear,
+      cpf,
+      rg,
+      cnhValidity,
+      address: {
+        street: address.street,
+        number: address.number,
+        complement: address.complement || '',
+        neighborhood: address.neighborhood,
+        city: address.city,
+        state: address.state,
+        zipCode: address.zipCode
+      }
     });
 
     await newEmployee.save();
     return res.status(201).json(newEmployee);
   } catch (error) {
-    return res.status(500).json({ message: 'Erro ao criar funcionário', error });
+    return res.status(500).json({ message: 'Erro ao criar funcionário', error: error.message });
   }
 };
 
-// Atualizar Funcionário pelo ID
 exports.updateEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, cnh,
+    const {
+      status,
+      cnh,
       position,
-      department, name, codigoRegional, codigoMunicipio, company, codigoLocal, codigoEquipe, phone, placaMoto, surname } = req.body;
+      department,
+      name,
+      codigoRegional,
+      codigoMunicipio,
+      company,
+      codigoLocal,
+      codigoEquipe,
+      admissionDate,
+      birthDate,
+      phone,
+      placaMoto,
+      surname,
+      cpf,
+      rg,
+      cnhValidity,
+      address,
+      vehicleModel,
+      vehicleYear
+    } = req.body;
 
-    // Buscar o funcionário pelo ID
+    // Find employee by ID
     const employee = await Employee.findById(id);
     if (!employee) {
       return res.status(404).json({ message: 'Funcionário não encontrado' });
     }
 
-    // Validação e busca das referências atualizadas
+    // Check CPF uniqueness if it's being updated
+    if (cpf && cpf !== employee.cpf) {
+      const existingEmployee = await Employee.findOne({ cpf });
+      if (existingEmployee) {
+        return res.status(400).json({ message: 'CPF já cadastrado no sistema' });
+      }
+    }
+
+    // Validate CNH validity date if it's being updated
+    if (cnhValidity && new Date(cnhValidity) < new Date()) {
+      return res.status(400).json({ message: 'Data de validade da CNH inválida' });
+    }
+
+    // Validate and fetch updated references
     const regional = await Regional.findById(codigoRegional);
     const municipio = await Municipio.findById(codigoMunicipio);
     const local = await Local.findById(codigoLocal);
@@ -76,29 +147,57 @@ exports.updateEmployee = async (req, res) => {
       return res.status(400).json({ message: 'Dados de regional, município ou local inválidos' });
     }
 
-    // Atualizar os campos do funcionário
+    // Validate address fields if address is being updated
+    if (address) {
+      if (!address.street || !address.number || !address.neighborhood || 
+      !address.zipCode) {
+        return res.status(400).json({ message: 'Dados de endereço incompletos' });
+      }
+    }
+
+    // Update employee fields
     employee.name = name || employee.name;
     employee.codigoRegional = regional._id;
     employee.codigoMunicipio = municipio._id;
     employee.company = company || employee.company;
     employee.codigoLocal = local._id;
     employee.codigoEquipe = codigoEquipe || employee.codigoEquipe;
-    employee.status = status
-    employee.position = position
-    employee.department = department
-    employee.phone = phone
-    employee.surname = surname
-    employee.placaMoto = placaMoto
-    employee.cnh = cnh
-    // Salvar as alterações
-    await employee.save();
+    employee.status = status || employee.status;
+    employee.position = position || employee.position;
+    employee.department = department || employee.department;
+    employee.phone = phone || employee.phone;
+    employee.surname = surname || employee.surname;
+    employee.placaMoto = placaMoto || employee.placaMoto;
+    employee.cnh = cnh || employee.cnh;
+    employee.cnh = cnhValidity || employee.cnhValidity;
+    employee.admissionDate = admissionDate || employee.admissionDate;
+    employee.birthDate = birthDate || employee.birthDate;
+    employee.vehicleModel = vehicleModel || employee.vehicleModel;
+    employee.vehicleYear = vehicleYear || vehicleYear;
+    // Update new fields
+    if (cpf) employee.cpf = cpf;
+    if (rg) employee.rg = rg;
+    if (cnhValidity) employee.cnhValidity = cnhValidity;
+    
+    // Update address if provided
+    if (address) {
+      employee.address = {
+        street: address.street,
+        number: address.number,
+        complement: address.complement || employee.address?.complement || '',
+        neighborhood: address.neighborhood,
+        city: address.city,
+        state: address.state,
+        zipCode: address.zipCode
+      };
+    }
 
+    await employee.save();
     return res.status(200).json({ message: 'Funcionário atualizado com sucesso', employee });
   } catch (error) {
-    return res.status(500).json({ message: 'Erro ao atualizar funcionário', error });
+    return res.status(500).json({ message: 'Erro ao atualizar funcionário', error: error.message });
   }
 };
-
 
 
 exports.getAllEmployees = async (req, res) => {

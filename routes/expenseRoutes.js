@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../config/multer');
-const { addExpense, getExpenses, updateExpense, deleteExpense } = require('../controllers/expenseController');
+const { addExpense, getExpenses, updateExpense, deleteExpense, getTerminationHistory } = require('../controllers/expenseController');
 
 // POST: Adicionar despesa com upload de arquivo
 router.post('/expenses', addExpense);
@@ -18,5 +18,6 @@ router.delete('/expenses/:id', deleteExpense);
 router.post('/expenses/vacation', addExpense);
 router.patch('/expenses/vacation/:id', updateExpense);
 router.post('/expenses/fixed', addExpense);
+router.get('/expenses/:id', getTerminationHistory);
 
 module.exports = router;

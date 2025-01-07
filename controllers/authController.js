@@ -57,6 +57,7 @@ const getUserById = async (req, res) => {
   try {
     // Buscar usuário pelo ID personalizado
     const user = await User.findOne({ id }).populate('employee'); // Associando o funcionário
+    console.log(user)
     if (!user) {
       return res.status(404).json({ message: 'Usuário não encontrado' });
     }
@@ -64,7 +65,7 @@ const getUserById = async (req, res) => {
     // Retornar os dados do usuário
     res.json({
       user: {
-        id: user.id, // Garantindo que o id personalizado seja retornado
+        id: user._id, // Garantindo que o id personalizado seja retornado
         name: user.name,
         email: user.email,
         role: user.role,
@@ -89,10 +90,14 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Email já está em uso' });
     }
 
-    // Verificar se o funcionário existe
-    const employee = await Employee.findById(employeeId);
-    if (!employee) {
-      return res.status(404).json({ message: 'Funcionário não encontrado' });
+    let employee = null;
+
+    // Verificar se o funcionário existe apenas se employeeId for fornecido
+    if (employeeId) {
+      employee = await Employee.findById(employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: 'Funcionário não encontrado' });
+      }
     }
 
     // Criar um novo usuário
@@ -102,7 +107,7 @@ const register = async (req, res) => {
       password,
       codigoRegional,
       role,
-      employee: employeeId, // Associando o usuário ao funcionário
+      employee: employeeId || null, // Associar ao funcionário se fornecido
     });
 
     // Salvar o usuário no banco de dados
@@ -110,7 +115,7 @@ const register = async (req, res) => {
 
     // Criar token JWT
     const token = jwt.sign(
-      { sub: newUser.id, role: newUser.role },
+      { sub: newUser._id, role: newUser.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -119,11 +124,11 @@ const register = async (req, res) => {
     res.status(201).json({
       access_token: token,
       user: {
-        id: newUser.id,
+        id: newUser._id,
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
-        employee: employee, // Retornando os dados do funcionário
+        employee: employee, // Retornar os dados do funcionário se fornecido
       },
     });
   } catch (error) {
@@ -132,4 +137,32 @@ const register = async (req, res) => {
   }
 };
 
-module.exports = { login, register, getUserById };
+
+// Função para listar todos os usuários
+const getAllUsers = async (req, res) => {
+  try {
+    // Buscar todos os usuários e popular o campo 'employee'
+    const users = await User.find().populate('employee', 'name email role');
+
+    // Verificar se há usuários cadastrados
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: 'Nenhum usuário encontrado' });
+    }
+
+    // Retornar a lista de usuários
+    res.status(200).json(users.map(user => ({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      codigoRegional: user.codigoRegional,
+      employee: user.employee, // Dados do funcionário associado
+    })));
+  } catch (error) {
+    console.error('Erro ao listar os usuários:', error);
+    res.status(500).json({ message: 'Erro no servidor', error });
+  }
+};
+
+
+module.exports = { login, register, getUserById, getAllUsers };
