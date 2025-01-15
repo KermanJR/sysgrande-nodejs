@@ -95,7 +95,7 @@ exports.getExpenses = async (req, res) => {
 exports.updateExpense = async (req, res) => {
   try {
 
-    console.log(req.body)
+   
     const terminationId = req.params.id;
     const oldTermination = await TerminationExpense.findById(terminationId);
     

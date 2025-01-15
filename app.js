@@ -10,6 +10,8 @@ const employeeRoutes = require('./routes/employeeRoutes');
 const municipioRoutes = require('./routes/municipioRoutes');  // Importando as rotas de município
 const localRoutes = require('./routes/localRoutes'); 
 const taskRoutes = require('./routes/taskRoutes'); 
+const purchaseRoutes = require('./routes/purchaseRoutes'); 
+const supplierRoutes = require('./routes/supplierRoutes'); 
 
 const cors = require('cors');
 const fs = require('fs');
@@ -38,6 +40,8 @@ app.use('/api', regionalRoutes);
 app.use('/api', authRoutes);
 app.use('/api', expenseRoutes);
 app.use('/api', employeeRoutes)
+app.use('/api', purchaseRoutes)
+app.use('/api', supplierRoutes)
 app.use('/api', municipioRoutes);  // Registrando a rota de municípios
 app.use('/api', localRoutes);  // Registrando a rota de locais
 app.use('/api', taskRoutes);  // Registrando a rota de locais
