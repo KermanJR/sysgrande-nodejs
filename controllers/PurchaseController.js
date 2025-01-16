@@ -133,86 +133,100 @@ exports.createPurchase = (req, res) => {
     }
   };
 
-exports.updatePurchase = async (req, res) => {
-  try {
-    const purchaseId = req.params.id;
-    const oldPurchase = await Purchase.findById(purchaseId);
-
-    if (!oldPurchase) {
-      return res.status(404).json({ error: 'Purchase not found' });
-    }
-
-    const updateData = req.body;
-    const changes = [];
-
-    // Track changes in main fields
-    const fieldsToTrack = [
-      'purchaseDate', 'supplier', 'amount', 'status',
-      'installmentDates', 'description', 'category'
-    ];
-
-    fieldsToTrack.forEach(field => {
-      const oldValue = oldPurchase[field];
-      const newValue = updateData[field];
-
-      if (newValue && oldValue?.toString() !== newValue?.toString()) {
+  exports.updatePurchase = async (req, res) => {
+    try {
+      const purchaseId = req.params.id;
+      const oldPurchase = await Purchase.findById(purchaseId);
+  
+      if (!oldPurchase) {
+        return res.status(404).json({ error: 'Purchase not found' });
+      }
+  
+      const updateData = req.body;
+      const changes = [];
+  
+      // Track changes in main fields
+      const fieldsToTrack = [
+        'purchaseDate', 'supplier', 'amount', 'status',
+        'installmentDates', 'description', 'category'
+      ];
+  
+      fieldsToTrack.forEach(field => {
+        const oldValue = oldPurchase[field];
+        const newValue = updateData[field];
+  
+        if (newValue && oldValue?.toString() !== newValue?.toString()) {
+          changes.push({
+            field,
+            oldValue: oldValue,
+            newValue: newValue
+          });
+        }
+      });
+  
+      // Handle file upload if there's a new file
+      if (req.file) {
+        updateData.attachment = req.file.path;
         changes.push({
-          field,
-          oldValue: oldValue,
-          newValue: newValue
+          field: 'attachment',
+          oldValue: oldPurchase.attachment,
+          newValue: req.file.path
         });
       }
-    });
-
-    console.log(req.file)
-    // Handle file upload if there's a new file
-    if (req.file) {
-      updateData.attachment = req.file.path;
-      changes.push({
-        field: 'attachment',
-        oldValue: oldPurchase.attachment,
-        newValue: req.file.path
-      });
-    }
-
-    // Create history entry if there are changes
-    if (changes.length > 0) {
-      const historyEntry = {
-        action: 'updated',
-        user: req.body.updateBy,
-        changes,
-        timestamp: new Date()
-      };
-
-      updateData.history = [...oldPurchase.history, historyEntry];
-    }
-
-    // Handle installment dates
-    if (updateData.installmentDates) {
-      updateData.installmentDates = JSON.parse(updateData.installmentDates)
-        .map(date => new Date(date));
-    }
-
-    updateData.updatedAt = new Date();
-
-    const updatedPurchase = await Purchase.findByIdAndUpdate(
-      purchaseId,
-      updateData,
-      { 
-        new: true,
-        runValidators: true 
+  
+      // Create history entry if there are changes
+      if (changes.length > 0) {
+        const historyEntry = {
+          action: 'updated',
+          user: req.body.updateBy,
+          changes,
+          timestamp: new Date()
+        };
+  
+        updateData.history = [...oldPurchase.history, historyEntry];
       }
-    )
-    .populate('supplier')
-    .populate('createdBy', 'name')
-
-
-    res.json(updatedPurchase);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
+  
+      // Handle installment dates with validation
+      if (updateData.installmentDates != null) {
+        try {
+          const parsedDates = JSON.parse(updateData.installmentDates);
+          
+          // Filter out invalid or empty dates
+          updateData.installmentDates = parsedDates
+            .map(date => {
+              const parsedDate = new Date(date);
+              return parsedDate.toString() === 'Invalid Date' ? null : parsedDate;
+            })
+            .filter(date => date !== null);
+  
+          // If all dates were invalid, set to empty array
+          if (updateData.installmentDates.length === 0) {
+            updateData.installmentDates = [];
+          }
+        } catch (parseError) {
+          // If JSON parsing fails, set to empty array
+          updateData.installmentDates = [];
+        }
+      }
+  
+      updateData.updatedAt = new Date();
+  
+      const updatedPurchase = await Purchase.findByIdAndUpdate(
+        purchaseId,
+        updateData,
+        { 
+          new: true,
+          runValidators: true 
+        }
+      )
+      .populate('supplier')
+      .populate('createdBy', 'name');
+  
+      res.json(updatedPurchase);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  };
 exports.getPurchaseHistory = async (req, res) => {
   try {
     const purchaseId = req.params.id;

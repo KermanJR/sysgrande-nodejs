@@ -34,11 +34,11 @@ const addressSchema = new mongoose.Schema({
 const suppliersSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Nome do fornecedor é obrigatório']
+    required: [false, 'Nome do fornecedor é obrigatório']
   },
   contact: {
     type: String,
-    required: [true, 'Nome do contato é obrigatório']
+    required: [false, 'Nome do contato é obrigatório']
   },
  
   email: {

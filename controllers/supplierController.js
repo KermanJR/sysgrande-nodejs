@@ -17,10 +17,10 @@ exports.createSupplier = async (req, res) => {
     
   
       // Verificar se o CNPJ já existe
-      const existingSupplier = await Suppliers.findOne({ cnpj });
+      /*const existingSupplier = await Suppliers.findOne({ cnpj });
       if (existingSupplier) {
         return res.status(400).json({ message: 'CNPJ já cadastrado no sistema' });
-      }
+      }*/
   /*
       // Validar campos obrigatórios
       if (!name || !cnpj || !email || !phone) {

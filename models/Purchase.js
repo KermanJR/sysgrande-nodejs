@@ -33,7 +33,8 @@ const purchaseSchema = new mongoose.Schema({
   },
   installments: {
     type: Number,
-    default: 1
+    default: 1,
+    required: false
   },
   installmentValue: {
     type: Number,
