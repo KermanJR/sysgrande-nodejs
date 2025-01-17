@@ -17,11 +17,11 @@ const purchaseItemSchema = new Schema({
   },
   unitPrice: {
     type: Number,
-    required: [true, 'Valor unitário é obrigatório']
+    required: [false, 'Valor unitário é obrigatório']
   },
   totalPrice: {
     type: Number,
-    required: [true, 'Valor total é obrigatório']
+    required: [false, 'Valor total é obrigatório']
   }
 });
 
@@ -54,7 +54,7 @@ const purchaseSchema = new mongoose.Schema({
   },
   totalPrice: {
     type: Number,
-    required: [true, 'Valor total é obrigatório']
+    required: [false, 'Valor total é obrigatório']
   },
 
   paymentMethod: {
