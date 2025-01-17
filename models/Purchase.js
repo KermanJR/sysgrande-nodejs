@@ -1,18 +1,15 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-const purchaseSchema = new mongoose.Schema({
-  materialType: {
+
+// Create a separate schema for items
+const purchaseItemSchema = new Schema({
+  name: {
     type: String,
-    required: [true, 'Tipo de material é obrigatório']
+    required: [true, 'Nome do item é obrigatório']
   },
-  buyer: {
+  type: {
     type: String,
-    required: [true, 'Tipo de material é obrigatório']
-  },
-  supplier: {
-    type: Schema.Types.ObjectId,
-    ref: 'Supplier',
-    required: [true, 'Fornecedor é obrigatório']
+    required: false
   },
   quantity: {
     type: Number,
@@ -25,10 +22,44 @@ const purchaseSchema = new mongoose.Schema({
   totalPrice: {
     type: Number,
     required: [true, 'Valor total é obrigatório']
+  }
+});
+
+const purchaseSchema = new mongoose.Schema({
+  // Remove these fields as they're now part of items
+  // materialType, quantity, unitPrice
+  
+  items: {
+    type: [purchaseItemSchema],
+    required: [true, 'Pelo menos um item é obrigatório'],
+    validate: {
+      validator: function(items) {
+        return items.length > 0;
+      },
+      message: 'A compra deve ter pelo menos um item'
+    }
   },
+  materialType: {
+    type: String,
+    required: [true, 'Tipo de material é obrigatório']
+  },
+  buyer: {
+    type: String,
+    required: [true, 'Comprador é obrigatório']
+  },
+  supplier: {
+    type: Schema.Types.ObjectId,
+    ref: 'Supplier',
+    required: [true, 'Fornecedor é obrigatório']
+  },
+  totalPrice: {
+    type: Number,
+    required: [true, 'Valor total é obrigatório']
+  },
+
   paymentMethod: {
     type: String,
-    required: [false, 'Forma de pagamento é obrigatória'],
+    required: false,
     enum: ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Boleto', 'PIX', 'Entrada + Pix Parcelas', 'Entrada + Boleto Parcelas']
   },
   installments: {
@@ -38,26 +69,26 @@ const purchaseSchema = new mongoose.Schema({
   },
   installmentValue: {
     type: Number,
-    required: [false, 'Valor da parcela é obrigatório']
+    required: false
   },
   installmentDates: [{
     type: Date,
-    required: [false, 'Data da parcela é obrigatória']
+    required: false
   }],
   purchaseDate: {
     type: Date,
-    required: [false, 'Data da compra é obrigatória']
+    required: false
   },
   deliveryDate: {
     type: Date,
-    required: [false, 'Data de entrega é obrigatória']
+    required: false
   },
-  entrancy:{
+  entrancy: {
     type: Number,
     required: false
   },
   attachment: {
-    type: String // URL do arquivo
+    type: String
   },
   company: {
     type: String,
@@ -71,12 +102,10 @@ const purchaseSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Atualizado por é obrigatório']
   },
- 
   deletedAt: {
     type: Date,
     default: null
   },
-
   history: [{
     action: String,
     user: String,
@@ -86,23 +115,29 @@ const purchaseSchema = new mongoose.Schema({
       newValue: Schema.Types.Mixed
     }],
     timestamp: Date
-  }],
+  }]
 }, {
   timestamps: true
 });
 
-// Método para soft delete
+// Middleware to calculate total price before saving
+purchaseSchema.pre('save', function(next) {
+  if (this.items && this.items.length > 0) {
+    this.totalPrice = this.items.reduce((sum, item) => sum + item.totalPrice, 0);
+  }
+  next();
+});
+
+// Existing methods
 purchaseSchema.methods.softDelete = function() {
   this.deletedAt = new Date();
   return this.save();
 };
 
-// Método virtual para verificar se está deletado
 purchaseSchema.virtual('isDeleted').get(function() {
   return this.deletedAt !== null;
 });
 
-// Query middleware para filtrar registros deletados
 purchaseSchema.pre('find', function() {
   this.where({ deletedAt: null });
 });

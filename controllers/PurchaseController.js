@@ -21,10 +21,28 @@ exports.createPurchase = (req, res) => {
         });
       }
 
-      // Handle installment dates - make it optional
+      // Parse items from the request body
+      let items = [];
+      if (data.items) {
+        try {
+          items = JSON.parse(data.items);
+          // Validate each item
+          items.forEach(item => {
+            if (!item.name || !item.quantity || !item.unitPrice) {
+              throw new Error('Dados dos itens incompletos');
+            }
+          });
+        } catch (error) {
+          return res.status(400).json({
+            message: 'Formato inválido para items',
+            error: error.message
+          });
+        }
+      }
+
+      // Handle installment dates
       if (data.installmentDates && data.installmentDates.length > 0) {
         try {
-          // Check if it's a string that needs parsing
           if (typeof data.installmentDates === 'string') {
             const parsedDates = JSON.parse(data.installmentDates)
               .map(date => date ? new Date(date) : null)
@@ -36,12 +54,11 @@ exports.createPurchase = (req, res) => {
               .filter(date => date !== null);
           }
         } catch (error) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             message: 'Formato inválido para installmentDates'
           });
         }
       } else {
-        // If no installment dates provided, set as empty array
         data.installmentDates = [];
       }
 
@@ -51,13 +68,13 @@ exports.createPurchase = (req, res) => {
 
       const newPurchase = new Purchase({
         ...data,
+        items,
         supplier: data.supplier,
         attachment: req.file ? req.file.path : null
       });
 
       await newPurchase.save();
 
-      // Populate supplier data before sending response
       const populatedPurchase = await Purchase.findById(newPurchase._id)
         .populate('supplier')
         .exec();
@@ -71,13 +88,14 @@ exports.createPurchase = (req, res) => {
           errors: Object.values(error.errors).map(err => err.message)
         });
       }
-      res.status(500).json({ 
-        message: 'Erro ao adicionar compra', 
-        error: error.message 
+      res.status(500).json({
+        message: 'Erro ao adicionar compra',
+        error: error.message
       });
     }
   });
 };
+
 
   exports.getPurchases = async (req, res) => {
     const { company } = req.query;
@@ -145,6 +163,22 @@ exports.createPurchase = (req, res) => {
       const updateData = req.body;
       const changes = [];
   
+      if (updateData.items) {
+        try {
+          updateData.items = JSON.parse(updateData.items);
+          // Track changes in items
+          changes.push({
+            field: 'items',
+            oldValue: oldPurchase.items,
+            newValue: updateData.items
+          });
+        } catch (error) {
+          return res.status(400).json({
+            message: 'Formato inválido para items',
+            error: error.message
+          });
+        }
+      }
       // Track changes in main fields
       const fieldsToTrack = [
         'purchaseDate', 'supplier', 'amount', 'status',
