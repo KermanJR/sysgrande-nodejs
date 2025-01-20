@@ -65,6 +65,7 @@ exports.createPurchase = (req, res) => {
       // Convert dates
       if (data.purchaseDate) data.purchaseDate = new Date(data.purchaseDate);
       if (data.deliveryDate) data.deliveryDate = new Date(data.deliveryDate);
+      if (data.entrancyPaymentDate) data.entrancyPaymentDate = new Date(data.entrancyPaymentDate);
 
       const newPurchase = new Purchase({
         ...data,
@@ -96,171 +97,167 @@ exports.createPurchase = (req, res) => {
   });
 };
 
+exports.getPurchases = async (req, res) => {
+  const { company } = req.query;
 
-  exports.getPurchases = async (req, res) => {
-    const { company } = req.query;
-  
-    if (!company) {
-      return res.status(400).json({ message: 'O campo "company" é obrigatório na consulta' });
-    }
-  
-    try {
-      const purchases = await Purchase.find({ 
-        company,
-        deletedAt: null 
-      })
-      .populate({
-        path: 'supplier',
-        select: 'name email phone address contact companyName cnpj' // Seleciona os campos que você quer do fornecedor
-      })
-      .populate('createdBy', 'name email')
-      .sort({ createdAt: -1 })
-      .lean() // Converte para objeto JavaScript puro para melhor performance
-      .exec();
-  
-      // Processar URLs de anexos se necessário
-      const purchasesWithAttachmentUrls = purchases.map(purchase => {
-        if (purchase.attachment) {
-          purchase.attachment = `${req.protocol}://${req.get('host')}/${purchase.attachment.replace(/\\/g, '/')}`;
-        }
-        
-        // Formatação adicional dos dados se necessário
-        return {
-          ...purchase,
-          formattedPurchaseDate: purchase.purchaseDate ? new Date(purchase.purchaseDate).toLocaleDateString('pt-BR') : null,
-          formattedDeliveryDate: purchase.deliveryDate ? new Date(purchase.deliveryDate).toLocaleDateString('pt-BR') : null,
-          // Adicione mais formatações se necessário
-        };
-      });
-  
-      // Adicionar metadados à resposta se necessário
-      const response = {
-        data: purchasesWithAttachmentUrls,
-        total: purchasesWithAttachmentUrls.length,
-        page: 1, // Se implementar paginação
-        totalPages: 1 // Se implementar paginação
+  if (!company) {
+    return res.status(400).json({ message: 'O campo "company" é obrigatório na consulta' });
+  }
+
+  try {
+    const purchases = await Purchase.find({ 
+      company,
+      deletedAt: null 
+    })
+    .populate({
+      path: 'supplier',
+      select: 'name email phone address contact companyName cnpj'
+    })
+    .populate('createdBy', 'name email')
+    .sort({ createdAt: -1 })
+    .lean()
+    .exec();
+
+    const purchasesWithAttachmentUrls = purchases.map(purchase => {
+      if (purchase.attachment) {
+        purchase.attachment = `${req.protocol}://${req.get('host')}/${purchase.attachment.replace(/\\/g, '/')}`;
+      }
+      
+      return {
+        ...purchase,
+        formattedPurchaseDate: purchase.purchaseDate ? new Date(purchase.purchaseDate).toLocaleDateString('pt-BR') : null,
+        formattedDeliveryDate: purchase.deliveryDate ? new Date(purchase.deliveryDate).toLocaleDateString('pt-BR') : null,
+        formattedEntrancyPaymentDate: purchase.entrancyPaymentDate ? new Date(purchase.entrancyPaymentDate).toLocaleDateString('pt-BR') : null
       };
-  
-      res.json(response.data);
-    } catch (error) {
-      console.error('Erro ao buscar compras:', error);
-      res.status(500).json({ 
-        message: 'Erro ao listar compras', 
-        error: error.message 
-      });
-    }
-  };
+    });
 
-  exports.updatePurchase = async (req, res) => {
-    try {
-      const purchaseId = req.params.id;
-      const oldPurchase = await Purchase.findById(purchaseId);
-  
-      if (!oldPurchase) {
-        return res.status(404).json({ error: 'Purchase not found' });
-      }
-  
-      const updateData = req.body;
-      const changes = [];
-  
-      if (updateData.items) {
-        try {
-          updateData.items = JSON.parse(updateData.items);
-          // Track changes in items
-          changes.push({
-            field: 'items',
-            oldValue: oldPurchase.items,
-            newValue: updateData.items
-          });
-        } catch (error) {
-          return res.status(400).json({
-            message: 'Formato inválido para items',
-            error: error.message
-          });
-        }
-      }
-      // Track changes in main fields
-      const fieldsToTrack = [
-        'purchaseDate', 'supplier', 'amount', 'status',
-        'installmentDates', 'description', 'category'
-      ];
-  
-      fieldsToTrack.forEach(field => {
-        const oldValue = oldPurchase[field];
-        const newValue = updateData[field];
-  
-        if (newValue && oldValue?.toString() !== newValue?.toString()) {
-          changes.push({
-            field,
-            oldValue: oldValue,
-            newValue: newValue
-          });
-        }
-      });
-  
-      // Handle file upload if there's a new file
-      if (req.file) {
-        updateData.attachment = req.file.path;
+    const response = {
+      data: purchasesWithAttachmentUrls,
+      total: purchasesWithAttachmentUrls.length,
+      page: 1,
+      totalPages: 1
+    };
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Erro ao buscar compras:', error);
+    res.status(500).json({ 
+      message: 'Erro ao listar compras', 
+      error: error.message 
+    });
+  }
+};
+
+exports.updatePurchase = async (req, res) => {
+  try {
+    const purchaseId = req.params.id;
+    const oldPurchase = await Purchase.findById(purchaseId);
+
+    if (!oldPurchase) {
+      return res.status(404).json({ error: 'Purchase not found' });
+    }
+
+    const updateData = req.body;
+    const changes = [];
+
+    if (updateData.items) {
+      try {
+        updateData.items = JSON.parse(updateData.items);
         changes.push({
-          field: 'attachment',
-          oldValue: oldPurchase.attachment,
-          newValue: req.file.path
+          field: 'items',
+          oldValue: oldPurchase.items,
+          newValue: updateData.items
+        });
+      } catch (error) {
+        return res.status(400).json({
+          message: 'Formato inválido para items',
+          error: error.message
         });
       }
-  
-      // Create history entry if there are changes
-      if (changes.length > 0) {
-        const historyEntry = {
-          action: 'updated',
-          user: req.body.updateBy,
-          changes,
-          timestamp: new Date()
-        };
-  
-        updateData.history = [...oldPurchase.history, historyEntry];
+    }
+
+    const fieldsToTrack = [
+      'purchaseDate', 'supplier', 'amount', 'status',
+      'installmentDates', 'description', 'category',
+      'entrancyPaymentDate'  // Added new field to track
+    ];
+
+    fieldsToTrack.forEach(field => {
+      const oldValue = oldPurchase[field];
+      const newValue = updateData[field];
+
+      if (newValue && oldValue?.toString() !== newValue?.toString()) {
+        changes.push({
+          field,
+          oldValue: oldValue,
+          newValue: newValue
+        });
       }
-  
-      // Handle installment dates with validation
-      if (updateData.installmentDates != null) {
-        try {
-          const parsedDates = JSON.parse(updateData.installmentDates);
-          
-          // Filter out invalid or empty dates
-          updateData.installmentDates = parsedDates
-            .map(date => {
-              const parsedDate = new Date(date);
-              return parsedDate.toString() === 'Invalid Date' ? null : parsedDate;
-            })
-            .filter(date => date !== null);
-  
-          // If all dates were invalid, set to empty array
-          if (updateData.installmentDates.length === 0) {
-            updateData.installmentDates = [];
-          }
-        } catch (parseError) {
-          // If JSON parsing fails, set to empty array
+    });
+
+    if (req.file) {
+      updateData.attachment = req.file.path;
+      changes.push({
+        field: 'attachment',
+        oldValue: oldPurchase.attachment,
+        newValue: req.file.path
+      });
+    }
+
+    if (changes.length > 0) {
+      const historyEntry = {
+        action: 'updated',
+        user: req.body.updateBy,
+        changes,
+        timestamp: new Date()
+      };
+
+      updateData.history = [...oldPurchase.history, historyEntry];
+    }
+
+    if (updateData.installmentDates != null) {
+      try {
+        const parsedDates = JSON.parse(updateData.installmentDates);
+        updateData.installmentDates = parsedDates
+          .map(date => {
+            const parsedDate = new Date(date);
+            return parsedDate.toString() === 'Invalid Date' ? null : parsedDate;
+          })
+          .filter(date => date !== null);
+
+        if (updateData.installmentDates.length === 0) {
           updateData.installmentDates = [];
         }
+      } catch (parseError) {
+        updateData.installmentDates = [];
       }
-  
-      updateData.updatedAt = new Date();
-  
-      const updatedPurchase = await Purchase.findByIdAndUpdate(
-        purchaseId,
-        updateData,
-        { 
-          new: true,
-          runValidators: true 
-        }
-      )
-      .populate('supplier')
-      .populate('createdBy', 'name');
-  
-      res.json(updatedPurchase);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
     }
-  };
+
+    // Handle entrancyPaymentDate
+    if (updateData.entrancyPaymentDate) {
+      updateData.entrancyPaymentDate = new Date(updateData.entrancyPaymentDate);
+    }
+
+    updateData.updatedAt = new Date();
+
+    const updatedPurchase = await Purchase.findByIdAndUpdate(
+      purchaseId,
+      updateData,
+      { 
+        new: true,
+        runValidators: true 
+      }
+    )
+    .populate('supplier')
+    .populate('createdBy', 'name');
+
+    res.json(updatedPurchase);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Rest of the controller functions remain unchanged
 exports.getPurchaseHistory = async (req, res) => {
   try {
     const purchaseId = req.params.id;

@@ -56,7 +56,6 @@ const purchaseSchema = new mongoose.Schema({
     type: Number,
     required: [false, 'Valor total é obrigatório']
   },
-
   paymentMethod: {
     type: String,
     required: false,
@@ -85,6 +84,10 @@ const purchaseSchema = new mongoose.Schema({
   },
   entrancy: {
     type: Number,
+    required: false
+  },
+  entrancyPaymentDate: {
+    type: Date,
     required: false
   },
   attachment: {
