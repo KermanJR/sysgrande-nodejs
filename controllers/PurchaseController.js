@@ -1,6 +1,7 @@
 const Purchase = require('../models/Purchase');
 const upload = require('../config/multer');
 const { checkPurchasesManually} = require('../services/purchaseRemindService')
+const { sendPurchaseReminderEmail } = require('../services/emailService');
 const mongoose = require('mongoose')
 
 exports.createPurchase = (req, res) => {
