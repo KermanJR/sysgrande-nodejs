@@ -3,12 +3,20 @@ const nodemailer = require('nodemailer');
 const config = require('../config/config');
 
 const transporter = nodemailer.createTransport({
-  host: config.email.host,
-  port: config.email.port,
-  secure: config.email.secure,
-  auth: config.email.auth,
+  host: 'smtps.uhserver.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  },
+  debug: true,
+  logger: true,
+  tls: {
+    rejectUnauthorized: false,
+    ciphers: 'SSLv3'
+  }
 });
-
 // Função para verificar a conexão do email
 const verifyEmailConnection = async () => {
   try {
