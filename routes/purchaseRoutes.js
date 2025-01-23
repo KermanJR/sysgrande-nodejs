@@ -12,4 +12,11 @@ router.delete('/purchase/:id', purchaseController.deletePurchase);
 router.get('/purchase/period/search', purchaseController.getPurchasesByPeriod);
 router.get('/purchase/supplier/search', purchaseController.getPurchasesBySupplier);
 
+// Novas rotas para notificações
+router.post('/check-reminders', purchaseController.checkPurchaseReminders);
+router.get('/notifications/:id',  purchaseController.getPurchaseNotifications);
+router.get('/notifications',  purchaseController.getPurchaseNotifications);
+router.post('/test-email/:id', purchaseController.testEmail); // Testa com uma compra específica
+router.post('/test-email', purchaseController.testEmailGeneric); // Testa com dados fictícios
+
 module.exports = router;

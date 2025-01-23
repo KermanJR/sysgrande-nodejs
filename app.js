@@ -10,12 +10,25 @@ const employeeRoutes = require('./routes/employeeRoutes');
 const municipioRoutes = require('./routes/municipioRoutes');  // Importando as rotas de município
 const localRoutes = require('./routes/localRoutes'); 
 const taskRoutes = require('./routes/taskRoutes'); 
+const epiInventoryRoutes = require('./routes/epiInventoryRoutes'); 
 const purchaseRoutes = require('./routes/purchaseRoutes'); 
 const supplierRoutes = require('./routes/supplierRoutes'); 
+const { startPurchaseReminderScheduler } = require('./services/purchaseRemindService');
+const { verifyEmailConnection } = require('./services/emailService');
 
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+
+//Conexão com E-mail
+verifyEmailConnection()
+  .then(isConnected => {
+    if (isConnected) {
+      console.log('Servidor de email configurado corretamente');
+    } else {
+      console.error('Falha na configuração do servidor de email');
+    }
+  });
 
 // Verificar se a pasta de uploads existe, caso contrário, criar
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -38,6 +51,7 @@ app.use(bodyParser.json());
 app.use('/api', itemRoutes);
 app.use('/api', regionalRoutes);
 app.use('/api', authRoutes);
+app.use('/api', epiInventoryRoutes);
 app.use('/api', expenseRoutes);
 app.use('/api', employeeRoutes)
 app.use('/api', purchaseRoutes)
@@ -54,3 +68,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+startPurchaseReminderScheduler();

@@ -1,5 +1,6 @@
 const Purchase = require('../models/Purchase');
 const upload = require('../config/multer');
+const { checkPurchasesManually} = require('../services/purchaseRemindService')
 const mongoose = require('mongoose')
 
 exports.createPurchase = (req, res) => {
@@ -340,5 +341,173 @@ exports.getPurchasesBySupplier = async (req, res) => {
     res.json(purchases);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// Método para verificar notificações manualmente
+exports.checkPurchaseReminders = async (req, res) => {
+  try {
+      await checkPurchasesManually();
+      res.json({ 
+          success: true, 
+          message: 'Verificação de lembretes executada com sucesso' 
+      });
+  } catch (error) {
+      console.error('Erro ao verificar lembretes:', error);
+      res.status(500).json({ 
+          success: false, 
+          message: 'Erro ao verificar lembretes',
+          error: error.message 
+      });
+  }
+};
+
+exports.getPurchaseNotifications = async (req, res) => {
+  try {
+      const { id } = req.params;
+      const purchase = await Purchase.findById(id)
+          .select('notifications items materialType supplier purchaseDate')
+          .populate('supplier', 'name');
+
+      if (!purchase) {
+          return res.status(404).json({
+              success: false,
+              message: 'Compra não encontrada'
+          });
+      }
+
+      res.json({
+          success: true,
+          data: purchase.notifications,
+          purchase: {
+              items: purchase.items,
+              materialType: purchase.materialType,
+              supplier: purchase.supplier,
+              purchaseDate: purchase.purchaseDate
+          }
+      });
+  } catch (error) {
+      console.error('Erro ao buscar notificações:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Erro ao buscar notificações',
+          error: error.message
+      });
+  }
+};
+
+exports.testEmail = async (req, res) => {
+  try {
+    const purchase = await Purchase.findById(req.params.id).populate('supplier');
+    if (!purchase) {
+      return res.status(404).json({ message: 'Compra não encontrada' });
+    }
+
+    const emailSent = await sendPurchaseReminderEmail(purchase);
+    
+    if (emailSent) {
+      res.json({ message: 'Email de teste enviado com sucesso' });
+    } else {
+      res.status(500).json({ message: 'Falha ao enviar email de teste' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao testar email', error: error.message });
+  }
+};
+
+exports.testEmailGeneric = async (req, res) => {
+  try {
+      // Email de teste com dados fictícios
+      const testPurchase = {
+          buyer: "Teste",
+          createdBy: "tecadm@sanegrande.com.br", // email que receberá o teste
+          items: [
+              {
+                  name: "Item Teste",
+                  quantity: 100,
+                  unitPrice: 10.00,
+                  totalPrice: 1000.00
+              }
+          ],
+          purchaseDate: new Date(),
+          supplier: {
+              name: "Fornecedor Teste"
+          },
+          totalPrice: 1000.00
+      };
+
+      const emailSent = await sendPurchaseReminderEmail(testPurchase);
+
+      if (emailSent) {
+          res.json({
+              success: true,
+              message: 'Email de teste genérico enviado com sucesso'
+          });
+      } else {
+          res.status(500).json({
+              success: false,
+              message: 'Falha ao enviar email de teste'
+          });
+      }
+  } catch (error) {
+      console.error('Erro ao testar email:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Erro ao testar email',
+          error: error.message
+      });
+  }
+};
+
+// Método para buscar todas as notificações
+exports.getAllNotifications = async (req, res) => {
+  try {
+      const { company, status, startDate, endDate } = req.query;
+      
+      let query = { deletedAt: null };
+      
+      if (company) {
+          query.company = company;
+      }
+
+      if (startDate && endDate) {
+          query['notifications.sentAt'] = {
+              $gte: new Date(startDate),
+              $lte: new Date(endDate)
+          };
+      }
+
+      const purchases = await Purchase.find(query)
+          .select('notifications items materialType supplier purchaseDate company')
+          .populate('supplier', 'name')
+          .sort({ 'notifications.sentAt': -1 });
+
+      // Filtra e formata as notificações
+      const notifications = purchases.reduce((acc, purchase) => {
+          const purchaseNotifications = purchase.notifications
+              .filter(notification => !status || notification.status === status)
+              .map(notification => ({
+                  ...notification.toObject(),
+                  purchaseId: purchase._id,
+                  materialType: purchase.materialType,
+                  supplier: purchase.supplier,
+                  company: purchase.company,
+                  items: purchase.items
+              }));
+          return [...acc, ...purchaseNotifications];
+      }, []);
+
+      res.json({
+          success: true,
+          total: notifications.length,
+          data: notifications
+      });
+  } catch (error) {
+      console.error('Erro ao buscar todas as notificações:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Erro ao buscar todas as notificações',
+          error: error.message
+      });
   }
 };

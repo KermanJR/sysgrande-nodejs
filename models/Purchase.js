@@ -1,6 +1,32 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
+// Adicione este schema para as notificações
+const purchaseNotificationSchema = new Schema({
+  type: {
+    type: String,
+    enum: ['recompra'],
+    required: true
+  },
+  sentAt: {
+    type: Date,
+    required: true
+  },
+  nextPurchaseDate: {
+    type: Date,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'sent', 'failed'],
+    default: 'pending'
+  },
+  emailTo: {
+    type: String,
+    required: true
+  }
+});
+
 // Create a separate schema for items
 const purchaseItemSchema = new Schema({
   name: {
@@ -15,6 +41,8 @@ const purchaseItemSchema = new Schema({
     type: Number,
     required: [true, 'Quantidade é obrigatória']
   },
+
+  notifications: [purchaseNotificationSchema],
   unitPrice: {
     type: Number,
     required: [false, 'Valor unitário é obrigatório']

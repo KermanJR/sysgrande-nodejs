@@ -1,2 +1,20 @@
 
-.codegpt
+# Arquivos de ambiente
+.env
+.env.local
+.env.*.local
+
+# Diretório de uploads
+uploads/
+
+# Dependências
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
