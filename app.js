@@ -12,6 +12,7 @@ const localRoutes = require('./routes/localRoutes');
 const taskRoutes = require('./routes/taskRoutes'); 
 const epiInventoryRoutes = require('./routes/epiInventoryRoutes'); 
 const purchaseRoutes = require('./routes/purchaseRoutes'); 
+const coletorsRoutes = require('./routes/coletorsRoutes'); 
 const supplierRoutes = require('./routes/supplierRoutes'); 
 const { startPurchaseReminderScheduler } = require('./services/purchaseRemindService');
 const { verifyEmailConnection } = require('./services/emailService');
@@ -56,6 +57,7 @@ app.use('/api', expenseRoutes);
 app.use('/api', employeeRoutes)
 app.use('/api', purchaseRoutes)
 app.use('/api', supplierRoutes)
+app.use('/api', coletorsRoutes)
 app.use('/api', municipioRoutes);  // Registrando a rota de municípios
 app.use('/api', localRoutes);  // Registrando a rota de locais
 app.use('/api', taskRoutes);  // Registrando a rota de locais

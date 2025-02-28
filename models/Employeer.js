@@ -4,11 +4,11 @@ const { v4: uuidv4 } = require("uuid");
 const addressSchema = new mongoose.Schema({
   street: {
     type: String,
-    required: true,
+    required: false,
   },
   number: {
     type: String,
-    required: true,
+    required: false,
   },
   complement: {
     type: String,
@@ -16,7 +16,7 @@ const addressSchema = new mongoose.Schema({
   },
   neighborhood: {
     type: String,
-    required: true,
+    required: false,
   },
   city: {
     type: String,
@@ -28,7 +28,7 @@ const addressSchema = new mongoose.Schema({
   },
   zipCode: {
     type: String,
-    required: true,
+    required: false,
   }
 });
 
@@ -64,7 +64,7 @@ const employeeSchema = new mongoose.Schema(
     },
     address: {
       type: addressSchema,
-      required: true,
+      required: false,
     },
     status: {
       type: String,
@@ -93,27 +93,28 @@ const employeeSchema = new mongoose.Schema(
     },
     codigoEquipe: {
       type: String,
-      required: false,
+      required: true,
     },
     deletedAt: {
       type: Date,
       default: null,
+      required: false,
     },
     department: {
       type: String,
-      required: true,
+      required: false,
     },
     placaMoto: {
       type: String,
-      required: true,
+      required: false,
     },
     birthDate:{
       type: Date,
-      required: true,
+      required: false,
     },
     admissionDate:{
       type: Date,
-      required: true
+      required: false,
     },
     vehicleYear: {
       type: String,
@@ -139,21 +140,22 @@ const employeeSchema = new mongoose.Schema(
       {
         mes: {
           type: String,
-          required: true,
+          required: false,
         },
         ano: {
           type: Number,
-          required: true,
+          required: false,
         },
         nota: {
           type: Number,
-          required: true,
+          required: false,
           min: 0,
           max: 10,
         },
         observacao: {
           type: String,
           default: "",
+          required: false
         },
       },
     ],

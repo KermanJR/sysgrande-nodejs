@@ -15,6 +15,8 @@ const checkPurchasesForReminder = async () => {
       'notifications.nextPurchaseDate': { $exists: false }
     }).populate('supplier');
 
+    console.log(purchases)
+
     for (const purchase of purchases) {
       const purchaseDate = new Date(purchase.purchaseDate);
       const nextPurchaseDate = new Date(purchaseDate);
@@ -41,10 +43,18 @@ const checkPurchasesForReminder = async () => {
   }
 };
 
-// Executa todos os dias às 9h
 const startPurchaseReminderScheduler = () => {
-  cron.schedule('0 9 * * *', checkPurchasesForReminder);
-};
+    cron.schedule('0 9 * * *', () => {
+      console.log('Executando às 9h todos os dias');
+      checkPurchasesForReminder(); // Ação diária
+    });
+  
+    // Executa a cada 10 segundos
+    /*setInterval(() => {
+      console.log('Executando a cada 10 segundos');
+      checkPurchasesForReminder(); // Ação repetida
+    }, 10000);*/
+  };
 
 // Função para verificação manual (útil para testes)
 const checkPurchasesManually = async () => {

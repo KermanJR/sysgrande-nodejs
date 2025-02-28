@@ -17,6 +17,7 @@ const transporter = nodemailer.createTransport({
     ciphers: 'SSLv3'
   }
 });
+
 // Função para verificar a conexão do email
 const verifyEmailConnection = async () => {
   try {
@@ -68,9 +69,9 @@ const sendPurchaseReminderEmail = async (purchase) => {
   try {
     await transporter.sendMail({
       from: config.email.from,
-      to: purchase.createdBy,
+      to: 'tecadm@sanegrande.com.br',
       subject: 'Lembrete de Recompra',
-      html: `...seu template de email...`,
+      html: emailContent,
     });
     return true;
   } catch (error) {

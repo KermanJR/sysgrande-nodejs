@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// Adicione este schema para as notificações
+// Schema para as notificações
 const purchaseNotificationSchema = new Schema({
   type: {
     type: String,
@@ -14,7 +14,7 @@ const purchaseNotificationSchema = new Schema({
   },
   nextPurchaseDate: {
     type: Date,
-    required: true
+    required: false
   },
   status: {
     type: String,
@@ -27,7 +27,7 @@ const purchaseNotificationSchema = new Schema({
   }
 });
 
-// Create a separate schema for items
+// Schema para os itens
 const purchaseItemSchema = new Schema({
   name: {
     type: String,
@@ -41,8 +41,6 @@ const purchaseItemSchema = new Schema({
     type: Number,
     required: [true, 'Quantidade é obrigatória']
   },
-
-  notifications: [purchaseNotificationSchema],
   unitPrice: {
     type: Number,
     required: [false, 'Valor unitário é obrigatório']
@@ -54,9 +52,6 @@ const purchaseItemSchema = new Schema({
 });
 
 const purchaseSchema = new mongoose.Schema({
-  // Remove these fields as they're now part of items
-  // materialType, quantity, unitPrice
-  
   items: {
     type: [purchaseItemSchema],
     required: [true, 'Pelo menos um item é obrigatório'],
@@ -71,6 +66,9 @@ const purchaseSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Tipo de material é obrigatório']
   },
+  notifications:{
+    type: [purchaseNotificationSchema]
+  },
   buyer: {
     type: String,
     required: [true, 'Comprador é obrigatório']
@@ -78,7 +76,7 @@ const purchaseSchema = new mongoose.Schema({
   supplier: {
     type: Schema.Types.ObjectId,
     ref: 'Supplier',
-    required: [true, 'Fornecedor é obrigatório']
+    required: [false, 'Fornecedor é obrigatório']
   },
   totalPrice: {
     type: Number,
@@ -108,6 +106,18 @@ const purchaseSchema = new mongoose.Schema({
   },
   deliveryDate: {
     type: Date,
+    required: false
+  },
+  nextPurchaseDate: {
+    type: Date,
+    required: false
+  },
+
+  // Novo campo de recorrência
+  recurrence: {
+    type: String,
+    enum: ['1 Mês', '2 Meses', '3 Meses', 'Semanal', 'Mensal', 'Quinzenal', 'Mediante Necessidade'],
+    default: 'Mediante Necessidade',
     required: false
   },
   entrancy: {
@@ -151,7 +161,7 @@ const purchaseSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Middleware to calculate total price before saving
+// Middleware para calcular o preço total antes de salvar
 purchaseSchema.pre('save', function(next) {
   if (this.items && this.items.length > 0) {
     this.totalPrice = this.items.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -159,7 +169,7 @@ purchaseSchema.pre('save', function(next) {
   next();
 });
 
-// Existing methods
+// Métodos existentes
 purchaseSchema.methods.softDelete = function() {
   this.deletedAt = new Date();
   return this.save();

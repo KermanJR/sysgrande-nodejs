@@ -33,9 +33,9 @@ exports.createEmployee = async (req, res) => {
     const municipio = await Municipio.findById(codigoMunicipio);
     const local = await Local.findById(codigoLocal);
 
-    if (!regional || !municipio || !local) {
+    /*if (!regional || !municipio || !local) {
       return res.status(400).json({ message: 'Dados de regional, equipe ou local inválidos' });
-    }
+    }*/
 
     // Check if CPF already exists
     const existingEmployee = await Employee.findOne({ cpf });
@@ -44,7 +44,7 @@ exports.createEmployee = async (req, res) => {
     }
 
     // Validate CNH validity date
-    if (new Date(cnhValidity) < new Date()) {
+    /*if (new Date(cnhValidity) < new Date()) {
       return res.status(400).json({ message: 'Data de validade da CNH inválida' });
     }
 
@@ -52,7 +52,7 @@ exports.createEmployee = async (req, res) => {
     if (!address || !address.street || !address.number || !address.neighborhood || 
         !address.zipCode) {
       return res.status(400).json({ message: 'Dados de endereço incompletos' });
-    }
+    }*/
 
     const newEmployee = new Employee({
       name,
@@ -134,16 +134,16 @@ exports.updateEmployee = async (req, res) => {
     }
 
     // Validate CNH validity date if it's being updated
-    if (cnhValidity && new Date(cnhValidity) < new Date()) {
+    /*if (cnhValidity && new Date(cnhValidity) < new Date()) {
       return res.status(400).json({ message: 'Data de validade da CNH inválida' });
-    }
+    }*/
 
     // Validate and fetch updated references
     const regional = await Regional.findById(codigoRegional);
     const municipio = await Municipio.findById(codigoMunicipio);
     const local = await Local.findById(codigoLocal);
 
-    if (!regional || !municipio || !local) {
+    /*if (!regional || !municipio || !local) {
       return res.status(400).json({ message: 'Dados de regional, município ou local inválidos' });
     }
 
@@ -153,7 +153,7 @@ exports.updateEmployee = async (req, res) => {
       !address.zipCode) {
         return res.status(400).json({ message: 'Dados de endereço incompletos' });
       }
-    }
+    }*/
 
     // Update employee fields
     employee.name = name || employee.name;

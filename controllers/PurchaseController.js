@@ -1,8 +1,8 @@
 const Purchase = require('../models/Purchase');
 const upload = require('../config/multer');
 const { checkPurchasesManually} = require('../services/purchaseRemindService')
+const mongoose = require('mongoose');
 const { sendPurchaseReminderEmail } = require('../services/emailService');
-const mongoose = require('mongoose')
 
 exports.createPurchase = (req, res) => {
   upload.single('attachment')(req, res, async (err) => {
@@ -64,7 +64,9 @@ exports.createPurchase = (req, res) => {
         data.installmentDates = [];
       }
 
-      // Convert dates
+      console.log(data)
+
+      // Converter datas
       if (data.purchaseDate) data.purchaseDate = new Date(data.purchaseDate);
       if (data.deliveryDate) data.deliveryDate = new Date(data.deliveryDate);
       if (data.entrancyPaymentDate) data.entrancyPaymentDate = new Date(data.entrancyPaymentDate);
@@ -363,37 +365,106 @@ exports.checkPurchaseReminders = async (req, res) => {
   }
 };
 
+
+
 exports.getPurchaseNotifications = async (req, res) => {
   try {
-      const { id } = req.params;
-      const purchase = await Purchase.findById(id)
-          .select('notifications items materialType supplier purchaseDate')
-          .populate('supplier', 'name');
+    const { id } = req.params;
+    const purchase = await Purchase.findById(id)
+      .select('notifications items materialType supplier purchaseDate')
+      .populate('supplier', 'name');
 
-      if (!purchase) {
-          return res.status(404).json({
-              success: false,
-              message: 'Compra não encontrada'
-          });
-      }
-
-      res.json({
-          success: true,
-          data: purchase.notifications,
-          purchase: {
-              items: purchase.items,
-              materialType: purchase.materialType,
-              supplier: purchase.supplier,
-              purchaseDate: purchase.purchaseDate
-          }
+    if (!purchase) {
+      return res.status(404).json({
+        success: false,
+        message: 'Compra não encontrada',
       });
+    }
+
+    // Data atual
+    const currentDate = new Date();
+
+    // Verifica se há notificações dentro do período de 7 dias antes da próxima compra
+    const relevantNotifications = purchase.notifications.filter((notification) => {
+      const nextPurchaseDate = new Date(notification.nextPurchaseDate); // Data da próxima compra
+      
+      const sevenDaysBefore = new Date(nextPurchaseDate);
+      sevenDaysBefore.setDate(nextPurchaseDate.getDate() - 7); // 7 dias antes da próxima compra
+
+      // Verifica se a notificação está dentro do período de 7 dias antes da próxima compra
+      return (
+        currentDate >= sevenDaysBefore && // Dentro do período de 7 dias antes
+        currentDate < nextPurchaseDate // Antes da data da próxima compra
+      );
+    });
+
+    // Retorna as notificações relevantes
+    res.json({
+      success: true,
+      data: relevantNotifications,
+      purchase: {
+        items: purchase.items,
+        materialType: purchase.materialType,
+        supplier: purchase.supplier,
+        purchaseDate: purchase.purchaseDate,
+      },
+    });
   } catch (error) {
-      console.error('Erro ao buscar notificações:', error);
-      res.status(500).json({
-          success: false,
-          message: 'Erro ao buscar notificações',
-          error: error.message
+    console.error('Erro ao buscar notificações:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar notificações',
+      error: error.message,
+    });
+  }
+};
+
+
+exports.markNotificationAsRead = async (req, res) => {
+  try {
+    const { purchaseId, notificationId } = req.params;
+
+    // Find the purchase
+    const purchase = await Purchase.findById(purchaseId);
+
+    if (!purchase) {
+      return res.status(404).json({
+        success: false,
+        message: 'Compra não encontrada'
       });
+    }
+
+    // Find the specific notification
+    const notificationIndex = purchase.notifications.findIndex(
+      notification => notification._id.toString() === notificationId
+    );
+
+    if (notificationIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notificação não encontrada'
+      });
+    }
+
+    // Mark the notification as read
+    purchase.notifications[notificationIndex].status = 'read';
+    purchase.notifications[notificationIndex].readAt = new Date();
+
+    // Save the updated purchase
+    await purchase.save();
+
+    res.json({
+      success: true,
+      message: 'Notificação marcada como lida',
+      notification: purchase.notifications[notificationIndex]
+    });
+  } catch (error) {
+    console.error('Erro ao marcar notificação como lida:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao marcar notificação como lida',
+      error: error.message
+    });
   }
 };
 
@@ -460,55 +531,68 @@ exports.testEmailGeneric = async (req, res) => {
   }
 };
 
-// Método para buscar todas as notificações
 exports.getAllNotifications = async (req, res) => {
   try {
-      const { company, status, startDate, endDate } = req.query;
-      
-      let query = { deletedAt: null };
-      
-      if (company) {
-          query.company = company;
-      }
+    const { company, status } = req.query;
+    let query = { deletedAt: null };
 
-      if (startDate && endDate) {
-          query['notifications.sentAt'] = {
-              $gte: new Date(startDate),
-              $lte: new Date(endDate)
+    if (company) {
+      query.company = company;
+    }
+
+    // Busca todas as compras com notificações
+    const purchases = await Purchase.find(query)
+      .select('notifications items materialType supplier purchaseDate company')
+      .populate('supplier', 'name')
+      .sort({ 'notifications.nextPurchaseDate': -1 });
+
+    // Data atual
+    const currentDate = new Date();
+
+    // Filtra e formata as notificações
+    const notifications = purchases.reduce((acc, purchase) => {
+      const purchaseNotifications = purchase?.notifications
+        .filter((notification) => {
+          // Verifica se a notificação está dentro do período de 7 dias antes da próxima compra
+          const nextPurchaseDate = new Date(notification.nextPurchaseDate);
+          console.log(nextPurchaseDate)
+          const sevenDaysBefore = new Date(nextPurchaseDate);
+          sevenDaysBefore.setDate(nextPurchaseDate.getDate() - 7);
+
+          // Verifica se a data atual está dentro do período de 7 dias antes da próxima compra
+          const isWithinSevenDays =
+            currentDate >= sevenDaysBefore && currentDate < nextPurchaseDate;
+
+          // Filtra por status, se fornecido
+          const matchesStatus = !status || notification.status === status;
+
+          return isWithinSevenDays && matchesStatus;
+        })
+        .map((notification) => {
+          return {
+            ...notification.toObject(),
+            purchaseId: purchase._id,
+            materialType: purchase.materialType,
+            supplier: purchase.supplier,
+            company: purchase.company,
+            items: purchase.items,
           };
-      }
+        });
 
-      const purchases = await Purchase.find(query)
-          .select('notifications items materialType supplier purchaseDate company')
-          .populate('supplier', 'name')
-          .sort({ 'notifications.sentAt': -1 });
+      return [...acc, ...purchaseNotifications];
+    }, []);
 
-      // Filtra e formata as notificações
-      const notifications = purchases.reduce((acc, purchase) => {
-          const purchaseNotifications = purchase.notifications
-              .filter(notification => !status || notification.status === status)
-              .map(notification => ({
-                  ...notification.toObject(),
-                  purchaseId: purchase._id,
-                  materialType: purchase.materialType,
-                  supplier: purchase.supplier,
-                  company: purchase.company,
-                  items: purchase.items
-              }));
-          return [...acc, ...purchaseNotifications];
-      }, []);
-
-      res.json({
-          success: true,
-          total: notifications.length,
-          data: notifications
-      });
+    res.json({
+      success: true,
+      total: notifications.length,
+      data: notifications,
+    });
   } catch (error) {
-      console.error('Erro ao buscar todas as notificações:', error);
-      res.status(500).json({
-          success: false,
-          message: 'Erro ao buscar todas as notificações',
-          error: error.message
-      });
+    console.error('Erro ao buscar todas as notificações:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar todas as notificações',
+      error: error.message,
+    });
   }
 };
